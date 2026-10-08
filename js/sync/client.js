@@ -45,11 +45,12 @@ export async function verifySignInCode(email, token) {
   const sb = getSupabase();
   if (!sb) throw new Error('Cloud sync is not configured yet');
   const code = String(token || '').replace(/\s+/g, '');
-  const { data, error } = await sb.auth.verifyOtp({
-    email: String(email || '').trim(),
-    token: code,
-    type: 'email',
-  });
+  const addr = String(email || '').trim();
+  let data, error;
+  ({ data, error } = await sb.auth.verifyOtp({ email: addr, token: code, type: 'email' }));
+  if (error) {
+    ({ data, error } = await sb.auth.verifyOtp({ email: addr, token: code, type: 'magiclink' }));
+  }
   if (error) throw error;
   return data;
 }

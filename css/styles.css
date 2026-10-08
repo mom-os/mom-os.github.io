@@ -1040,3 +1040,19 @@ input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
   .acct-pair-code { font-size: 1.25rem; letter-spacing: .18em; }
 }
 
+.btn.is-busy { opacity: .75; cursor: wait; position: relative; }
+.btn.is-busy::after {
+  content: ''; width: .7rem; height: .7rem; margin-left: .45rem; display: inline-block;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  animation: spin .7s linear infinite; vertical-align: -0.05rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.sw-update-banner {
+  position: fixed; left: 50%; bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%); z-index: 9999;
+  display: flex; gap: .75rem; align-items: center;
+  padding: .65rem .9rem; border-radius: 999px;
+  background: var(--ink, #2c2a28); color: #fff; box-shadow: 0 8px 28px rgba(0,0,0,.22);
+  font-size: .9rem; max-width: calc(100vw - 1.5rem);
+}
+.sw-update-banner .btn { background: #fff; color: var(--ink, #2c2a28); border: 0; }

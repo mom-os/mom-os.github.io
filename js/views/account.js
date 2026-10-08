@@ -213,6 +213,23 @@ async function doCreatePair(ctx) {
   ctx.rerender();
 }
 
+
+function setBusy(btn, on, labelWhenBusy) {
+  if (!btn) return;
+  if (on) {
+    btn.dataset.prevLabel = btn.textContent;
+    btn.disabled = true;
+    btn.classList.add('is-busy');
+    btn.setAttribute('aria-busy', 'true');
+    if (labelWhenBusy) btn.textContent = labelWhenBusy;
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('is-busy');
+    btn.removeAttribute('aria-busy');
+    if (btn.dataset.prevLabel) { btn.textContent = btn.dataset.prevLabel; delete btn.dataset.prevLabel; }
+  }
+}
+
 export function bindAccountActions(view, ctx) {
   // Prefill from QR / deep link once
   if (!ctx._pairQueryApplied) {
@@ -224,9 +241,19 @@ export function bindAccountActions(view, ctx) {
   }
 
   view.addEventListener('click', async (e) => {
-    const a = e.target.closest('[data-a]')?.dataset.a;
+    const btn = e.target.closest('[data-a]');
+    const a = btn?.dataset.a;
     if (!a || !a.startsWith('acct-')) return;
+    e.preventDefault();
     const sync = ctx.sync;
+    const busyActs = new Set(['acct-send-code', 'acct-resend', 'acct-verify', 'acct-create-pair', 'acct-new-pair', 'acct-redeem-pair', 'acct-signout', 'acct-rotate-feed']);
+    if (busyActs.has(a)) {
+      if (btn.disabled || btn.classList.contains('is-busy')) return;
+      setBusy(btn, true, a === 'acct-verify' || a === 'acct-redeem-pair' ? 'Signing in…'
+        : a === 'acct-send-code' || a === 'acct-resend' ? 'Sending…'
+        : a === 'acct-create-pair' || a === 'acct-new-pair' ? 'Creating code…'
+        : 'Working…');
+    }
     try {
       if (a === 'acct-send-code' || a === 'acct-resend') {
         const email = (a === 'acct-resend' ? pendingEmail(ctx) : view.querySelector('.acct-email')?.value.trim()) || '';
@@ -253,10 +280,11 @@ export function bindAccountActions(view, ctx) {
         setTimeout(() => view.querySelector('.acct-code')?.focus(), 50);
       } else if (a === 'acct-have-email-code') {
         const email = view.querySelector('.acct-email')?.value.trim() || ctx.accountDraftEmail || '';
-        if (!email || !email.includes('@')) { ctx.toast('Enter your email first'); return; }
+        if (!email || !email.includes('@')) { ctx.toast('Enter your email first, then tap again'); return; }
         ctx.accountDraftEmail = email;
         ctx.accountPendingEmail = email;
         ctx.accountEmailRateLimited = false;
+        ctx.toast('Enter the 6-digit code from your email');
         ctx.rerender();
         setTimeout(() => view.querySelector('.acct-code')?.focus(), 50);
       } else if (a === 'acct-verify') {
@@ -308,9 +336,13 @@ export function bindAccountActions(view, ctx) {
         await sync.rotateCalendarToken();
         ctx.toast('New link created — update your calendar subscription');
         ctx.rerender();
+      } else {
+        ctx.toast('That action isn’t available yet');
       }
     } catch (err) {
       ctx.toast(friendlyAuthError(err));
+    } finally {
+      if (busyActs.has(a) && btn?.isConnected) setBusy(btn, false);
     }
   });
 

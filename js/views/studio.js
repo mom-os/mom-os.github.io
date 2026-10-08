@@ -342,6 +342,7 @@ export function renderStudio(view, ctx, arg) {
       if (set) return commit(set);
       if (d.sw === 'set-anchors') return store.updateSettings({ showAnchors: on });
     }
+    if (d.a && String(d.a).startsWith('acct-')) return; // bindAccountActions handles these
     switch (d.a) {
       case 'q-add': return addQuote();
       case 'pv-toggle': ctx.studioPreview = !showPv; return ctx.rerender();
@@ -422,4 +423,10 @@ export function renderStudio(view, ctx, arg) {
   });
   const addQuote = () => { const v = view.querySelector('.q-new')?.value.trim(); if (v) commit((s) => { s.quotes.custom.push(v); }); };
   view.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.classList.contains('q-new')) { e.preventDefault(); addQuote(); } });
+
+  // Account panel actions (bind once — view is reused across studio re-renders)
+  if (!ctx._accountActionsBound) {
+    bindAccountActions(view, ctx);
+    ctx._accountActionsBound = true;
+  }
 }

@@ -117,11 +117,45 @@ ctx.applyStyleOnly = () => applyTheme();
 window.addEventListener('hashchange', render);
 render();
 
+function showSwUpdateBanner(reg) {
+  if (document.getElementById('sw-update-banner')) return;
+  const b = document.createElement('div');
+  b.id = 'sw-update-banner';
+  b.className = 'sw-update-banner';
+  b.innerHTML = `<span>New version available</span><button type="button" class="btn small primary">Tap to refresh</button>`;
+  b.querySelector('button').onclick = () => {
+    try { reg?.waiting?.postMessage('skipWaiting'); } catch {}
+    location.reload();
+  };
+  document.body.appendChild(b);
+}
+
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => {
     const swUrl = new URL('../sw.js', import.meta.url);
     navigator.serviceWorker.register(swUrl, { scope: new URL('../', import.meta.url).pathname })
+      .then((reg) => {
+        if (reg.waiting) showSwUpdateBanner(reg);
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) showSwUpdateBanner(reg);
+          });
+        });
+        // Proactively check for updates when Account is opened / tab focuses
+        const check = () => reg.update().catch(() => {});
+        window.addEventListener('focus', check);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+        setTimeout(check, 2000);
+      })
       .catch((e) => console.warn('SW failed', e));
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      location.reload();
+    });
   });
 }
 window.__planner = { store, ctx }; // handy for debugging in devtools

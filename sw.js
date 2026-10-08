@@ -1,7 +1,7 @@
 // Fonts beyond the 4 defaults are cached at runtime the first time they're used.
-// App-shell service worker: cache-first for our own static files so the
-// planner opens instantly and works offline from the iPhone home screen.
-const VERSION = 'momos-v0.4.5';
+// App-shell service worker: network-first for shell so Account/auth fixes land quickly;
+// cache fallback keeps the iPhone home-screen app offline-capable.
+const VERSION = 'momos-v0.4.6';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/styles.css',
   './js/app.js', './js/views/account.js', './js/sync/engine.js', './js/sync/merge.js', './js/sync/client.js', './js/vendor/supabase.js', './js/vendor/uqr.js', './js/config.js', './js/store.js', './js/seed.js', './js/dates.js', './js/util.js', './js/ui.js',
@@ -20,13 +20,20 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
+self.addEventListener('message', (e) => {
+  if (e.data === 'skipWaiting') self.skipWaiting();
+});
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  if (req.mode === 'navigate') {
-    // network-first for the page itself so updates show up, cache as fallback
-    e.respondWith(fetch(req).then((res) => { caches.open(VERSION).then((c) => c.put('./index.html', res.clone())); return res; })
-      .catch(() => caches.match('./index.html')));
+  const path = new URL(req.url).pathname;
+  const isShellDoc = req.mode === 'navigate' || path.endsWith('.html') || path.endsWith('.js') || path.endsWith('.css') || path.endsWith('sw.js');
+  if (isShellDoc) {
+    // Network-first so auth/Account fixes appear after refresh
+    e.respondWith(fetch(req).then((res) => {
+      if (res.ok) { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); }
+      return res;
+    }).catch(() => caches.match(req).then((hit) => hit || caches.match('./index.html'))));
     return;
   }
   e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => {
