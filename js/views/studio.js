@@ -59,7 +59,7 @@ function previewHTML(ctx) {
     body = `<div class="pv-cols n${cols.length}">${cols.map((c) => `<div>${c.map((s) => pvSec(s, s.role === 'issues' ? 'p:sparkle' : '')).join('')}</div>`).join('')}</div>`;
   }
   return `<div class="pv" aria-label="Live preview">
-    <div class="pv-top">${st.header.showMark ? '<span class="brand-mark"></span>' : ''}<span class="pv-brand">${esc(st.header.title || 'my planner')}</span>
+    <div class="pv-top">${st.header.showMark ? '<span class="brand-mark"></span>' : ''}<span class="pv-brand">${esc(st.header.title || 'MomOS')}</span>
       <span class="pv-tabs"><i></i><i></i><i></i><i></i></span></div>
     <div class="pv-row">
       <div class="pv-page paper ${L.day === 'vertical' && L.spiral ? 'with-spine' : ''}">
@@ -123,7 +123,7 @@ function panelStickers(ctx) {
 function panelWords(ctx) {
   const st = ctx.store.style; const q = st.quotes;
   return `<h2 class="panel-title">Quotes & header</h2>
-    <label class="field"><span>Planner name (top left)</span><input class="hdr-title" value="${esc(st.header.title)}" maxlength="32" placeholder="my planner"></label>
+    <label class="field"><span>Planner name (top left)</span><input class="hdr-title" value="${esc(st.header.title)}" maxlength="32" placeholder="MomOS"></label>
     ${toggle('hdr-mark', st.header.showMark, 'Show the little planner icon')}
     <h3 class="panel-sub">Motivational quote</h3>
     ${seg('qmode', [['rotate', 'New one each day'], ['fixed', 'Keep one quote']], q.mode)}

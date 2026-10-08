@@ -10,7 +10,7 @@ export function defaultStyle() {
     themeId: 'blush',
     customThemes: [],
     fonts: { heading: 'auto', body: 'auto', script: 'auto' },
-    header: { title: 'my planner', showMark: true },
+    header: { title: 'MomOS', showMark: true },
     quotes: { mode: 'rotate', fixed: 'Think big. Start small.', useLibrary: true, cats: ['motivation', 'calm', 'mom', 'hustle', 'adhd'], custom: [] },
     layout: { day: 'vertical', spiral: true, notes: true, weekStart: 0, hourStart: 6, hourEnd: 22 },
     paper: { texture: 'plain', stock: 'smooth', desk: '', hasImage: false, imageDim: 0.25 },
@@ -28,6 +28,8 @@ export function migrateStyle(saved, legacy = {}) {
     if (legacy.theme) out.themeId = legacy.theme;
     if (legacy.quote) { out.quotes.mode = 'fixed'; out.quotes.fixed = legacy.quote; out.quotes.custom = [legacy.quote]; }
   }
+  // Rebrand: only replace the previous shipped default; keep user-customized names.
+  if ((out.header.title || '').trim().toLowerCase() === 'my planner') out.header.title = 'MomOS';
   return out;
 }
 
@@ -94,9 +96,9 @@ export function applyStyle(settings) {
   root.classList.toggle('has-bg-image', !!img);
   // painted by a fixed body::before layer (iOS Safari ignores background-attachment: fixed)
   if (img) root.style.setProperty('--bg-image', `linear-gradient(rgba(0,0,0,${st.paper.imageDim}), rgba(0,0,0,${st.paper.imageDim})), url("${img}")`);
-  const brand = document.querySelector('.brand-name'); if (brand) brand.textContent = st.header.title || 'my planner';
+  const brand = document.querySelector('.brand-name'); if (brand) brand.textContent = st.header.title || 'MomOS';
   const mark = document.querySelector('.brand-mark'); if (mark) mark.hidden = !st.header.showMark;
-  document.title = st.header.title ? st.header.title.replace(/^./, (c) => c.toUpperCase()) : 'Planner';
+  document.title = st.header.title ? st.header.title.replace(/^./, (c) => c.toUpperCase()) : 'MomOS';
   const desk = st.paper.desk || theme.colors.desk;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', desk);
   document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
