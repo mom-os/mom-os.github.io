@@ -54,3 +54,39 @@ export function blueprintFromDay(day) {
 }
 
 export const defaultTemplates = () => clone(DEFAULT_TEMPLATES);
+
+/** Built-in starter list ideas (not persisted until user creates one). */
+export const LIST_STARTERS = [
+  { title: 'Packing list', color: 'sky', items: ['Charger', 'Water bottle', 'Snacks'] },
+  { title: 'Grocery list', color: 'sage', items: ['Milk', 'Eggs', 'Bread'] },
+  { title: 'Session shot list', color: 'lavender', items: ['Wide establishing', 'Detail shots', 'Candids'] },
+  { title: 'Kid stuff to pack', color: 'butter', items: ['Spare clothes', 'Snacks', 'Favorite toy'] },
+  { title: 'To-buy', color: 'peach', items: [] },
+];
+
+export function makeListItem(partial = {}) {
+  return { id: uid('li'), text: '', done: false, ...partial };
+}
+
+export function makeList(partial = {}) {
+  return {
+    id: uid('list'),
+    title: partial.title || 'New list',
+    color: partial.color || 'teal',
+    items: (partial.items || []).map((t) => (typeof t === 'string' ? makeListItem({ text: t }) : makeListItem(t))),
+    createdAt: Date.now(),
+  };
+}
+
+export function ensureDayExtras(day) {
+  if (!day) return day;
+  if (!Array.isArray(day.lists)) day.lists = [];
+  if (!day.reflection || typeof day.reflection !== 'object') {
+    day.reflection = { wentWell: '', carryOver: '', focus: '' };
+  } else {
+    day.reflection.wentWell ??= '';
+    day.reflection.carryOver ??= '';
+    day.reflection.focus ??= '';
+  }
+  return day;
+}

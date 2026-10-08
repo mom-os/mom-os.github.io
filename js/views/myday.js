@@ -86,6 +86,8 @@ export function renderMyDay(view, ctx, arg) {
       </div>
       <div class="head-actions">
         <a class="btn small" href="#/day/${key}">Edit day</a>
+        <a class="btn small" href="#/lists/${key}">Lists</a>
+        <a class="btn small" href="#/eod/${key}">End of day</a>
         <button class="btn small" data-act="export">${icon.cal}<span>Export</span></button>
       </div>
     </div>

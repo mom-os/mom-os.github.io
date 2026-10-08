@@ -1,5 +1,5 @@
 import { clone, uid } from './util.js';
-import { instantiate, defaultTemplates } from './templates.js';
+import { instantiate, defaultTemplates, ensureDayExtras } from './templates.js';
 import { defaultStyle, migrateStyle } from './style/engine.js';
 
 const nowIso = () => new Date().toISOString();
@@ -38,7 +38,7 @@ export function defaultState() {
         weekend: [],
       },
     },
-    templates: defaultTemplates(),
+    templates: { ...defaultTemplates(), listTemplates: [] },
     days: {},          // 'YYYY-MM-DD' -> day
     monthNotes: {},    // 'YYYY-MM' -> [{id,text,sample?}]
     meta: { seeded: false, sampleActive: false, createdAt: Date.now() },
@@ -54,6 +54,7 @@ function migrate(s) {
   s.settings.style = migrateStyle(s.settings.style && s.settings.style.layout ? s.settings.style : null, legacy);
   delete s.settings.theme; delete s.settings.quote;
   s.templates = { ...base.templates, ...(s.templates || {}) };
+  if (!Array.isArray(s.templates.listTemplates)) s.templates.listTemplates = [];
   s.days ||= {}; s.monthNotes ||= {}; s.meta = { ...base.meta, ...(s.meta || {}) };
   s.version = SCHEMA_VERSION;
   return s;
@@ -79,17 +80,24 @@ export class Store {
   hasDay(key) { return !!this.state.days[key]; }
   /** Returns the saved day, or a template-based preview that becomes real on first edit. */
   getDay(key) {
-    if (this.state.days[key]) return this.state.days[key];
-    if (!this.virtual.has(key)) this.virtual.set(key, instantiate(this.state.templates, key));
+    if (this.state.days[key]) return ensureDayExtras(this.state.days[key]);
+    if (!this.virtual.has(key)) this.virtual.set(key, ensureDayExtras(instantiate(this.state.templates, key)));
     return this.virtual.get(key);
   }
   mutateDay(key, fn, opts) {
     const day = this.getDay(key);
     if (!this.state.days[key]) { this.state.days[key] = day; this.virtual.delete(key); }
     fn(day);
+    ensureDayExtras(day);
     day.updatedAt = nowIso();
     this.commit('day', opts);
     return day;
+  }
+  get listTemplates() { return this.state.templates.listTemplates || []; }
+  setListTemplates(list, opts) {
+    this.state.templates.listTemplates = list;
+    this.state.templates.updatedAt = nowIso();
+    this.commit('templates', opts);
   }
   resetDay(key) {
     delete this.state.days[key]; this.virtual.delete(key);

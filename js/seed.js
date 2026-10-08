@@ -1,4 +1,4 @@
-import { instantiate, makeItem } from './templates.js';
+import { instantiate, makeItem, makeList } from './templates.js';
 import { uid } from './util.js';
 
 // Clearly-fake example content so the design can be judged. Every seeded
@@ -21,6 +21,15 @@ const SAMPLE = {
     ],
     stickers: ['p:coffee'], secStickers: { issues: 'p:sparkle' },
     notes: 'Example note: ask about daycare picture day.\nExample: pick up printer ink.',
+    lists: [
+      { title: 'Grocery pickup', color: 'sage', items: [
+        ['Milk (example)', True], ['Bananas (example)', True], ['Tortillas (example)', False], ['Salsa (example)', False],
+      ]},
+      { title: 'Kid stuff to pack', color: 'butter', items: [
+        ['Spare clothes (example)', False], ['Snack cup (example)', False],
+      ]},
+    ],
+    reflection: { wentWell: 'Got the brochure mockups out the door (example).', carryOver: 'Still need flu-shot call (example).', focus: 'Ship the three resale orders (example).' },
   },
   '2026-10-10': { // Saturday (weekend template)
     issues: [
@@ -44,6 +53,11 @@ const SAMPLE = {
     ],
     stickers: ['p:sun', 'p:camera'], secStickers: { sessions: 'p:camera', meals: 'p:heart' },
     notes: 'Example: charge camera batteries Friday night.',
+    lists: [
+      { title: 'Session shot list', color: 'lavender', items: [
+        ['Wide establishing (example)', False], ['Detail: rings / details (example)', False], ['Candids between poses (example)', False],
+      ]},
+    ],
   },
 };
 
@@ -67,6 +81,14 @@ export function seedSample(store) {
         sec.items.push(...rows.map(([text, time, done, sticker]) => makeItem({ text, time, done, sample: true, ...(sticker ? { sticker } : {}) })));
       }
     }
+    if (data.lists) {
+      day.lists = data.lists.map((L) => makeList({
+        title: L.title, color: L.color,
+        items: L.items.map(([text, done]) => ({ text, done: !!done, sample: true })),
+      }));
+      for (const L of day.lists) for (const it of L.items) it.sample = true;
+    }
+    if (data.reflection) day.reflection = { ...data.reflection };
     store.state.days[key] = day;
     store.virtual.delete(key);
   }
@@ -92,7 +114,11 @@ export function clearSample(store) {
       sec.items = sec.items.filter((i) => !i._drop);
     }
     if (day.notesSample) { day.notes = ''; delete day.notesSample; }
-    const hasReal = day.sections.some((sec) => sec.items.some((i) => (i.text || '').trim())) || (day.notes || '').trim();
+    if (Array.isArray(day.lists)) {
+      for (const L of day.lists) L.items = L.items.filter((i) => !i.sample);
+      day.lists = day.lists.filter((L) => L.items.length);
+    }
+    const hasReal = day.sections.some((sec) => sec.items.some((i) => (i.text || '').trim())) || (day.notes || '').trim() || (day.lists || []).length;
     if (day.sample && !hasReal) delete s.days[key];
   }
   for (const mk of Object.keys(s.monthNotes)) s.monthNotes[mk] = s.monthNotes[mk].filter((n) => !n.sample);

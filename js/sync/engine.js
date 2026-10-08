@@ -129,7 +129,7 @@ export class SyncEngine {
         const local = { ...templates, updatedAt: templates.updatedAt };
         const m = mergeDoc(local, remote);
         if (m.winner === 'remote') {
-          templates = { weekday: remote.weekday ?? templates.weekday, weekend: remote.weekend ?? templates.weekend, updatedAt: remote.updatedAt };
+          templates = { weekday: remote.weekday ?? templates.weekday, weekend: remote.weekend ?? templates.weekend, listTemplates: remote.listTemplates ?? templates.listTemplates ?? [], updatedAt: remote.updatedAt };
         }
       }
 

@@ -7,6 +7,8 @@ import { renderMonth } from './views/month.js';
 import { renderDay } from './views/day.js';
 import { renderMyDay } from './views/myday.js';
 import { renderStudio } from './views/studio.js';
+import { renderLists } from './views/lists.js';
+import { renderEndOfDay } from './views/endofday.js';
 import { SyncEngine, SyncStatus } from './sync/engine.js';
 import { syncChipHTML } from './views/account.js';
 import { isSupabaseConfigured } from './config.js';
@@ -53,7 +55,7 @@ function parseRoute() {
     return { name: 'myday', arg: todayKey() };
   }
   const parts = raw.replace(/^#\/?/, '').split('/');
-  const name = ['month', 'day', 'myday', 'style'].includes(parts[0]) ? parts[0] : 'myday';
+  const name = ['month', 'day', 'myday', 'lists', 'eod', 'style'].includes(parts[0]) ? parts[0] : 'myday';
   return { name, arg: parts[1] };
 }
 
@@ -61,7 +63,7 @@ export function applyTheme() { applyStyle(store.settings); }
 
 function updateTabs(route) {
   const fd = ctx.focusDate;
-  const hrefs = { month: `#/month/${monthKey(fromKey(fd))}`, day: `#/day/${fd}`, myday: `#/myday/${fd}`, style: '#/style' };
+  const hrefs = { month: `#/month/${monthKey(fromKey(fd))}`, day: `#/day/${fd}`, myday: `#/myday/${fd}`, lists: `#/lists/${fd}`, eod: `#/eod/${fd}`, style: '#/style' };
   for (const a of document.querySelectorAll('#tabs .tab')) {
     a.href = hrefs[a.dataset.tab];
     a.classList.toggle('active', a.dataset.tab === route.name);
@@ -88,7 +90,7 @@ let lastRouteKey = '';
 function render() {
   closePopover();
   const route = parseRoute();
-  if (route.name === 'day' || route.name === 'myday') ctx.focusDate = /^\d{4}-\d{2}-\d{2}$/.test(route.arg || '') ? route.arg : ctx.focusDate;
+  if (route.name === 'day' || route.name === 'myday' || route.name === 'lists' || route.name === 'eod') ctx.focusDate = /^\d{4}-\d{2}-\d{2}$/.test(route.arg || '') ? route.arg : ctx.focusDate;
   if (route.name === 'month' && /^\d{4}-\d{2}$/.test(route.arg || '') && !ctx.focusDate.startsWith(route.arg)) ctx.focusDate = `${route.arg}-01`;
   applyTheme(); updateTabs(route); renderBanner(); renderSyncChip();
 
@@ -104,7 +106,7 @@ function render() {
   document.body.dataset.view = route.name;
   // cloneNode drops listeners — allow Account to re-bind on the new node
   ctx._accountActionsBound = false;
-  ({ month: renderMonth, day: renderDay, myday: renderMyDay, style: renderStudio })[route.name](view, ctx, route.arg);
+  ({ month: renderMonth, day: renderDay, myday: renderMyDay, lists: renderLists, eod: renderEndOfDay, style: renderStudio })[route.name](view, ctx, route.arg);
 
   if (routeKey === lastRouteKey) {
     window.scrollTo(0, scroll);
