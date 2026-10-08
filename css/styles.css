@@ -133,19 +133,21 @@ input, textarea, select { background: transparent; }
 }
 .brand { display: flex; align-items: center; gap: .65rem; padding-bottom: .55rem; }
 .brand-mark {
-  width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
-  background: #111; color: #fff;
+  /* Wide enough for optically-centered "M." (letter + gap + period) */
+  width: 34px; height: 28px; border-radius: 7px; flex-shrink: 0;
+  background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%); color: #fff;
   box-shadow: none; position: relative;
 }
 .brand-mark::after {
-  content: 'M'; position: absolute; inset: 0; display: grid; place-items: center;
-  font-family: 'Montserrat', var(--font-brand), system-ui, sans-serif; font-weight: 700; font-size: .78rem; letter-spacing: .02em;
+  content: 'M'; position: absolute; left: 0; right: 10px; top: 0; bottom: 0;
+  display: grid; place-items: center;
+  font-family: 'Montserrat', var(--font-brand), system-ui, sans-serif; font-weight: 700; font-size: .8rem; letter-spacing: 0;
   color: #fff; line-height: 1;
 }
-/* tiny teal period — matches home-screen icon */
+/* Teal period to the right of M with a clear gap (matches home-screen icon) */
 .brand-mark::before {
-  content: ''; position: absolute; width: 4px; height: 4px; border-radius: 50%;
-  background: #7db3b5; right: 5px; bottom: 5px; z-index: 1;
+  content: ''; position: absolute; width: 5px; height: 5px; border-radius: 50%;
+  background: #5fafb2; right: 5px; bottom: 7px; z-index: 1;
 }
 /* playful chrome keeps the little planner glyph */
 [data-chrome="playful"] .brand-mark {
@@ -542,7 +544,7 @@ input, textarea, select { background: transparent; }
     background: var(--desk);
     border-bottom: 1px solid var(--line);
   }
-  .brand-mark { width: 26px; height: 26px; border-radius: 8px; }
+  .brand-mark { width: 32px; height: 26px; border-radius: 8px; }
   .brand-name { font-size: 1.22rem; letter-spacing: .14em; }
   .tabs { flex: 1; gap: 0; padding: .35rem .4rem calc(.35rem + env(safe-area-inset-bottom)); }
   .tab { flex: 1; text-align: center; transform: none; border-radius: 12px; margin: 0 .1rem; padding: .65rem .15rem; font-size: .62rem; letter-spacing: .06em; box-shadow: none; opacity: .75; }
