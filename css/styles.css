@@ -134,15 +134,14 @@ input, textarea, select { background: transparent; }
 .brand { display: flex; align-items: center; gap: .65rem; padding-bottom: .55rem; }
 .brand-mark {
   width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
-  background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%); color: #fff;
+  background: #111; color: #fff;
   box-shadow: none; position: relative;
-  /* white rectangular frame inset — matches home-screen icon */
   box-sizing: border-box;
-  border: 1px solid rgba(255,255,255,.92);
+  border: 0;
 }
 .brand-mark::after {
   content: 'M'; position: absolute; inset: 0; display: grid; place-items: center;
-  font-family: 'Montserrat', var(--font-brand), system-ui, sans-serif; font-weight: 700; font-size: .72rem; letter-spacing: 0;
+  font-family: 'Montserrat', var(--font-brand), system-ui, sans-serif; font-weight: 700; font-size: .78rem; letter-spacing: 0;
   color: #fff; line-height: 1;
 }
 .brand-mark::before { content: none; }
