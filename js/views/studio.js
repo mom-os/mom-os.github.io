@@ -1,6 +1,7 @@
 // STYLE tab: the customization studio. Every control writes to settings.style;
 // the whole app (and the live preview) restyles instantly via CSS variables.
 import { PRESETS, QUOTE_LIBRARY, QUOTE_CATS, PATTERNS, STOCKS, DAY_LAYOUTS } from '../style/presets.js';
+import { LOOKS, applyLook } from '../style/looks.js';
 import { fontsFor } from '../style/fonts.js';
 import { PACKS, EMOJI, stickerHTML } from '../style/stickers.js';
 import { themeById, deriveVars, varsToCss, duplicateTheme, defaultStyle, quotePool,
@@ -13,8 +14,14 @@ import { esc, uid } from '../util.js';
 import { quoteFor } from './shared.js';
 
 const PANELS = [
-  ['themes', 'Themes'], ['colors', 'Colors'], ['fonts', 'Fonts'], ['stickers', 'Stickers'],
+  ['looks', 'Looks'], ['themes', 'Themes'], ['colors', 'Colors'], ['fonts', 'Fonts'], ['stickers', 'Stickers'],
   ['words', 'Quotes & header'], ['layout', 'Layout'], ['paper', 'Paper'], ['share', 'Share & reset'], ['planner', 'Planner setup'],
+];
+const WORDMARKS = [
+  ['a', 'Geometric caps', 'Bold Montserrat · MOM.OS · tight tracking'],
+  ['b', 'Editorial serif', 'Playfair · Mom.OS · accent period'],
+  ['c', 'Modern monogram', 'DM Sans · Mom.OS · M mark'],
+  ['d', 'Quiet grotesk', 'Figtree · mom.os · square mark'],
 ];
 const COLOR_FIELDS = [['accent', 'Accent', 'Banner, checkmarks, buttons'], ['secondary', 'Secondary', 'Tabs, today, highlights'],
   ['desk', 'Background', 'Behind the pages'], ['page', 'Paper', 'The pages themselves'], ['text', 'Text', 'Your ink color'], ['script', 'Quote ink', 'Handwritten quote']];
@@ -49,17 +56,18 @@ function pvSec(s, sticker) {
 }
 function previewHTML(ctx) {
   const st = ctx.store.style; const L = st.layout;
-  const head = `<div class="pv-head"><span class="pv-num">8</span><span class="pv-dow">Thursday</span>${stickerHTML('p:coffee')}<span class="pv-quote">${esc(quoteFor(ctx, '2026-10-08'))}</span></div>`;
+  const showStk = st.chrome === 'playful' || st.stickers?.showInMonth;
+  const head = `<div class="pv-head"><span class="pv-num">8</span><span class="pv-dow">Thursday</span>${showStk ? stickerHTML('p:coffee') : ''}<span class="pv-quote">${esc(quoteFor(ctx, '2026-10-08'))}</span></div>`;
   let body;
   if (L.day === 'hourly') {
     body = `<div class="pv-hourly"><div class="pv-hours">${[['7a', 'Work starts', 1], ['8a'], ['9a'], ['10a'], ['11a'], ['12p'], ['1p'], ['2p', 'Client review call'], ['3p']].map(([h, t, d]) =>
-      `<div class="pv-hour"><span>${h}</span>${t ? `<em class="${d ? 'done' : ''}"><span class="pv-chk"></span>${t}</em>` : ''}</div>`).join('')}</div><div>${pvSec(PV.A, 'p:sparkle')}${pvSec(PV.B)}</div></div>`;
+      `<div class="pv-hour"><span>${h}</span>${t ? `<em class="${d ? 'done' : ''}"><span class="pv-chk"></span>${t}</em>` : ''}</div>`).join('')}</div><div>${pvSec(PV.A, showStk ? 'p:sparkle' : '')}${pvSec(PV.B)}</div></div>`;
   } else {
     const cols = L.day === 'columns' ? [[PV.A], [PV.B], [PV.C]] : L.day === 'stacked' ? [[PV.A, PV.C]] : [[PV.A, PV.B], [PV.C]];
-    body = `<div class="pv-cols n${cols.length}">${cols.map((c) => `<div>${c.map((s) => pvSec(s, s.role === 'issues' ? 'p:sparkle' : '')).join('')}</div>`).join('')}</div>`;
+    body = `<div class="pv-cols n${cols.length}">${cols.map((c) => `<div>${c.map((s) => pvSec(s, showStk && s.role === 'issues' ? 'p:sparkle' : '')).join('')}</div>`).join('')}</div>`;
   }
   return `<div class="pv" aria-label="Live preview">
-    <div class="pv-top">${st.header.showMark ? '<span class="brand-mark"></span>' : ''}<span class="pv-brand">${brandHTML(st.header.title || 'Mom.OS')}</span>
+    <div class="pv-top">${st.header.showMark ? '<span class="brand-mark"></span>' : ''}<span class="pv-brand">${brandHTML(st.header.title || 'Mom.OS', st.header.wordmark || 'a')}</span>
       <span class="pv-tabs"><i></i><i></i><i></i><i></i></span></div>
     <div class="pv-row">
       <div class="pv-page paper ${L.day === 'vertical' && L.spiral ? 'with-spine' : ''}">
@@ -72,6 +80,23 @@ function previewHTML(ctx) {
 }
 
 // ---------- panels ----------
+
+function panelLooks(ctx) {
+  const st = ctx.store.style;
+  const cur = st.lookId || 'custom';
+  return `<h2 class="panel-title">Looks</h2>
+    <p class="muted">A Look sets theme, type, chrome, quotes, binding and stickers together. Tweak anything afterward — your changes stay.</p>
+    <div class="look-grid">${LOOKS.map((l) => {
+      const on = cur === l.id;
+      const sw = l.swatch.map((c) => `<i style="background:${c}"></i>`).join('');
+      return `<button class="look-card ${on ? 'on' : ''}" data-look="${l.id}" aria-pressed="${on}">
+        <div class="look-swatch">${sw}</div>
+        <div class="look-body"><b>${esc(l.name)}</b><small>${esc(l.note)}</small>
+          <div class="look-state">${on ? 'In use' : 'Apply'}</div></div>
+      </button>`;
+    }).join('')}</div>
+    ${cur === 'custom' ? '<p class="note-box">You\'re on a custom mix. Pick a Look above to reset the bundle, or keep refining.</p>' : ''}`;
+}
 function panelThemes(ctx) {
   const st = ctx.store.style;
   const mine = st.customThemes;
@@ -128,11 +153,22 @@ function panelStickers(ctx) {
       <div class="pack-sheet emoji">${Object.values(EMOJI).flat().slice(0, 30).map((e) => stickerHTML('e:' + e)).join('')}</div></div>`;
 }
 function panelWords(ctx) {
-  const st = ctx.store.style; const q = st.quotes;
+  const st = ctx.store.style; const q = st.quotes; const wm = st.header.wordmark || 'a';
   return `<h2 class="panel-title">Quotes & header</h2>
-    <label class="field"><span>App name (top left)</span><input class="hdr-title" value="${esc(st.header.title)}" maxlength="32" placeholder="Mom.OS"></label>
-    ${toggle('hdr-mark', st.header.showMark, 'Show the little planner icon')}
-    <p class="muted">Change the wordmark typeface under <b>Fonts → App name</b>.</p>
+    <label class="field"><span>App name</span><input class="hdr-title" value="${esc(st.header.title)}" maxlength="32" placeholder="Mom.OS"></label>
+    ${toggle('hdr-mark', st.header.showMark, 'Show the brand mark')}
+    <h3 class="panel-sub">Wordmark</h3>
+    <p class="muted">Four professional treatments of Mom.OS. Default is A until you pick another.</p>
+    <div class="wordmark-grid">${WORDMARKS.map(([id, name, note]) => {
+      const preview = `<span class="brand-mark"></span><span class="brand-name">${brandHTML(st.header.title || 'Mom.OS', id)}</span>`;
+      return `<button type="button" class="wm-card ${wm === id ? 'on' : ''}" data-wordmark="${id}" data-wordmark-preview="${id}">
+        <div class="wm-lab">Option ${id.toUpperCase()} · ${esc(name)}</div>
+        <div class="wm-preview" data-wordmark="${id}">${preview}</div>
+        <p class="wm-note">${esc(note)}</p>
+      </button>`;
+    }).join('')}</div>
+    <h3 class="panel-sub">Quote style</h3>
+    ${seg('qdisplay', [['italic', 'Italic serif'], ['smallcaps', 'Small caps'], ['script', 'Handwritten']], q.display || 'italic')}
     <h3 class="panel-sub">Motivational quote</h3>
     ${seg('qmode', [['rotate', 'New one each day'], ['fixed', 'Keep one quote']], q.mode)}
     ${q.mode === 'fixed' ? `<label class="field"><span>Your quote</span><input class="q-fixed" value="${esc(q.fixed)}" maxlength="80"></label>
@@ -224,7 +260,7 @@ function panelPlanner(ctx) {
     <h3 class="panel-sub">Put it on your iPhone</h3>
     <p class="muted">Open this page in Safari → Share → <b>Add to Home Screen</b>. It opens full-screen and works offline.</p>`;
 }
-const RENDER = { themes: panelThemes, colors: panelColors, fonts: panelFonts, stickers: panelStickers, words: panelWords, layout: panelLayout, paper: panelPaper, share: panelShare, planner: panelPlanner };
+const RENDER = { looks: panelLooks, themes: panelThemes, colors: panelColors, fonts: panelFonts, stickers: panelStickers, words: panelWords, layout: panelLayout, paper: panelPaper, share: panelShare, planner: panelPlanner };
 
 // ---------- helpers ----------
 function download(name, text, type = 'application/json') {
@@ -249,14 +285,14 @@ function resizeImage(file, max = 1600) {
 // ---------- main ----------
 export function renderStudio(view, ctx, arg) {
   const { store } = ctx;
-  const panel = RENDER[arg] ? arg : (ctx.studioPanel || 'themes');
+  const panel = RENDER[arg] ? arg : (ctx.studioPanel || 'looks');
   ctx.studioPanel = panel;
   const showPv = ctx.studioPreview !== false;
 
   view.innerHTML = `
   <section class="studio">
     <nav class="studio-nav" aria-label="Style studio sections">
-      <p class="script-title studio-title">Style studio</p>
+      <p class="script-title studio-title">Style</p>
       ${PANELS.map(([id, l]) => `<a class="snav ${id === panel ? 'on' : ''}" href="#/style/${id}">${l}</a>`).join('')}
     </nav>
     <div class="studio-panel paper panel-${panel}">${RENDER[panel](ctx)}</div>
@@ -281,15 +317,18 @@ export function renderStudio(view, ctx, arg) {
   };
 
   view.addEventListener('click', async (e) => {
-    const el = e.target.closest('[data-pick],[data-font],[data-layout],[data-texture],[data-qmode],[data-qcat],[data-quse],[data-qdel],[data-wstart],[data-tsize],[data-stock-pick],[data-sw],[data-a]');
+    const el = e.target.closest('[data-pick],[data-look],[data-wordmark],[data-font],[data-layout],[data-texture],[data-qmode],[data-qdisplay],[data-qcat],[data-quse],[data-qdel],[data-wstart],[data-tsize],[data-stock-pick],[data-sw],[data-a]');
     if (!el || !view.contains(el)) return; // never match attributes on <html>
     const d = el.dataset;
-    if (d.pick) return commit((s) => { s.themeId = d.pick; });
-    if (d.font) return commit((s) => { s.fonts[d.fontCat] = d.font; });
+    if (d.look) return commit((s) => { applyLook(s, d.look); });
+    if (d.wordmark) return commit((s) => { s.header.wordmark = d.wordmark; s.lookId = 'custom'; });
+    if (d.pick) return commit((s) => { s.themeId = d.pick; s.lookId = 'custom'; });
+    if (d.font) return commit((s) => { s.fonts[d.fontCat] = d.font; s.lookId = 'custom'; });
     if (d.layout) return commit((s) => { s.layout.day = d.layout; });
     if (d.texture) return commit((s) => { s.paper.texture = d.texture; });
     if (d.stockPick) return commit((s) => { s.paper.stock = d.stockPick; });
     if (d.qmode) return commit((s) => { s.quotes.mode = d.qmode; });
+    if (d.qdisplay) return commit((s) => { s.quotes.display = d.qdisplay; s.lookId = 'custom'; });
     if (d.qcat) return commit((s) => { const c = s.quotes.cats; s.quotes.cats = c.includes(d.qcat) ? c.filter((x) => x !== d.qcat) : [...c, d.qcat]; });
     if (d.quse !== undefined) { commit((s) => { s.quotes.mode = 'fixed'; s.quotes.fixed = d.quse; }); return ctx.toast('Quote set. Switch back to “New one each day” anytime.'); }
     if (d.qdel !== undefined) return commit((s) => { s.quotes.custom.splice(Number(d.qdel), 1); });
@@ -309,7 +348,7 @@ export function renderStudio(view, ctx, arg) {
       case 'dup-theme': return commit((s) => { const t = duplicateTheme(s, s.themeId); s.themeId = t.id; });
       case 'del-theme': {
         if (!(await confirmSheet(el, 'Delete this theme?', 'Delete'))) return;
-        return ctx.withUndo('Theme deleted', () => commit((s) => { s.customThemes = s.customThemes.filter((t) => t.id !== s.themeId); s.themeId = 'blush'; }));
+        return ctx.withUndo('Theme deleted', () => commit((s) => { s.customThemes = s.customThemes.filter((t) => t.id !== s.themeId); s.themeId = 'studio'; s.lookId = 'custom'; }));
       }
       case 'desk-reset': return commit((s) => { s.paper.desk = ''; });
       case 'bg-remove': localStorage.removeItem(BG_KEY); return commit((s) => { s.paper.hasImage = false; });

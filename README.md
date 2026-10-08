@@ -41,6 +41,9 @@ js/calendar/providers.js                    icsDownload, icsShare (live) + subsc
 scripts/                                    smoke tests, screenshot script, sample background photo
 ```
 
+## Looks
+Studio (default), Minimal Mono, Editorial Serif, and Sweet bundle theme + fonts + chrome + quotes + binding + stickers. Pick them at the top of Style.
+
 ## Customization model (`settings.style`)
 `themeId`, `customThemes[]` (each theme has accent/secondary/desk/page/text/script + 9 section colors), `fonts{heading,body,script}`,
 `header{title,showMark}`, `quotes{mode,fixed,useLibrary,cats,custom}`, `layout{day,spiral,notes,weekStart,hourStart,hourEnd}`,

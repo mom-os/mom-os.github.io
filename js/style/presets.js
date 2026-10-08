@@ -5,6 +5,12 @@ const DARK_SECTIONS = { teal: '#70a4a6', blush: '#d59cb2', rose: '#c97a93', sage
 const T = (id, name, note, c, extra = {}) => ({ id, name, note, colors: { sections: c.dark ? DARK_SECTIONS : LIGHT_SECTIONS, ...c }, ...extra });
 
 export const PRESETS = [
+  T('studio', 'Studio', 'Warm stone, charcoal ink, a single deep-teal accent. Quiet and premium.',
+    { accent: '#3d6b6e', secondary: '#8a7e76', desk: '#f3f1ee', page: '#fbfaf8', text: '#2c2a28', script: '#5a6560',
+      sections: { teal: '#3d6b6e', blush: '#c4a4a8', rose: '#a66d6d', sage: '#7d8f7a', lavender: '#9a92a8', butter: '#c4b48a', peach: '#c4a090', sky: '#7a92a0', stone: '#a39a92' } }, { css: true }),
+  T('editorial', 'Editorial', 'Cream pages, dusty rose, bookish serif energy.',
+    { accent: '#a66d6d', secondary: '#8a7e76', desk: '#f0ebe4', page: '#fffaf4', text: '#2f2a28', script: '#6b5e58',
+      sections: { teal: '#6d8580', blush: '#c4a4a8', rose: '#a66d6d', sage: '#8a947c', lavender: '#9a92a8', butter: '#c4b48a', peach: '#c4a090', sky: '#7a92a0', stone: '#a39a92' } }, { css: true }),
   T('blush', 'Blush & Teal', 'The paper planner look: soft white pages, teal banner, pink tabs.',
     { accent: '#7db3b5', secondary: '#ee9fb4', desk: '#f4eeec', page: '#fefdfb', text: '#4b4549', script: '#6aa6a9' }, { css: true }),
   T('linen', 'Linen Minimal', 'Quiet neutrals and lots of white space.',
