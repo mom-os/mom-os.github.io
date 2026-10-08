@@ -138,7 +138,7 @@ input, textarea, select { background: transparent; }
   box-shadow: none; position: relative;
   /* white rectangular frame inset — matches home-screen icon */
   box-sizing: border-box;
-  border: 1.5px solid #fff;
+  border: 1px solid rgba(255,255,255,.92);
 }
 .brand-mark::after {
   content: 'M'; position: absolute; inset: 0; display: grid; place-items: center;
