@@ -134,13 +134,18 @@ input, textarea, select { background: transparent; }
 .brand { display: flex; align-items: center; gap: .65rem; padding-bottom: .55rem; }
 .brand-mark {
   width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
-  background: var(--ink); color: var(--page);
+  background: #111; color: #fff;
   box-shadow: none; position: relative;
 }
 .brand-mark::after {
   content: 'M'; position: absolute; inset: 0; display: grid; place-items: center;
-  font-family: var(--font-brand); font-weight: 700; font-size: .72rem; letter-spacing: .04em;
-  color: var(--page); line-height: 1;
+  font-family: 'Montserrat', var(--font-brand), system-ui, sans-serif; font-weight: 700; font-size: .78rem; letter-spacing: .02em;
+  color: #fff; line-height: 1;
+}
+/* tiny teal period — matches home-screen icon */
+.brand-mark::before {
+  content: ''; position: absolute; width: 4px; height: 4px; border-radius: 50%;
+  background: #7db3b5; right: 5px; bottom: 5px; z-index: 1;
 }
 /* playful chrome keeps the little planner glyph */
 [data-chrome="playful"] .brand-mark {
@@ -149,6 +154,7 @@ input, textarea, select { background: transparent; }
   border-radius: 9px;
 }
 [data-chrome="playful"] .brand-mark::after { content: none; }
+[data-chrome="playful"] .brand-mark::before { content: none; }
 .brand-name {
   font-family: var(--font-brand); font-size: 1.2rem; font-weight: 600;
   letter-spacing: .12em; color: var(--ink); line-height: 1; text-transform: none;
@@ -161,6 +167,8 @@ input, textarea, select { background: transparent; }
   font-size: 1.05rem; font-weight: 700; letter-spacing: .22em; text-transform: uppercase;
 }
 [data-wordmark="a"] .brand-name .brand-dot { letter-spacing: 0; margin: 0 .04em; }
+[data-wordmark="a"] .brand-mark { background: #111; }
+[data-wordmark="a"] .brand-mark::after { color: #fff; font-family: 'Montserrat', var(--font-brand), system-ui, sans-serif; font-weight: 700; }
 [data-wordmark="b"] .brand-name {
   font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
   font-size: 1.55rem; font-weight: 500; letter-spacing: .04em; text-transform: none;
@@ -182,6 +190,7 @@ input, textarea, select { background: transparent; }
   width: 9px; height: 9px; border-radius: 2px; background: var(--accent); box-shadow: none;
 }
 [data-wordmark="d"] .brand-mark::after { content: none; }
+[data-wordmark="d"] .brand-mark::before { content: none; }
 [data-wordmark="d"] .brand { gap: .45rem; }
 .tabs { display: flex; gap: .3rem; }
 .tab {
