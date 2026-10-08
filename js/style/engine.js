@@ -1,7 +1,7 @@
 // Applies the user's style (theme, fonts, paper, layout toggles, header) to the document.
 import { PRESETS, QUOTE_LIBRARY } from './presets.js';
 import { fontById, injectFontFaces } from './fonts.js';
-import { clone, uid } from '../util.js';
+import { clone, uid, esc } from '../util.js';
 
 export const BG_KEY = 'jb-planner:bg-image';
 
@@ -9,8 +9,8 @@ export function defaultStyle() {
   return {
     themeId: 'blush',
     customThemes: [],
-    fonts: { heading: 'auto', body: 'auto', script: 'auto' },
-    header: { title: 'MomOS', showMark: true },
+    fonts: { heading: 'auto', body: 'auto', script: 'auto', brand: 'auto' },
+    header: { title: 'Mom.OS', showMark: true },
     quotes: { mode: 'rotate', fixed: 'Think big. Start small.', useLibrary: true, cats: ['motivation', 'calm', 'mom', 'hustle', 'adhd'], custom: [] },
     layout: { day: 'vertical', spiral: true, notes: true, weekStart: 0, hourStart: 6, hourEnd: 22 },
     paper: { texture: 'plain', stock: 'smooth', desk: '', hasImage: false, imageDim: 0.25 },
@@ -28,8 +28,9 @@ export function migrateStyle(saved, legacy = {}) {
     if (legacy.theme) out.themeId = legacy.theme;
     if (legacy.quote) { out.quotes.mode = 'fixed'; out.quotes.fixed = legacy.quote; out.quotes.custom = [legacy.quote]; }
   }
-  // Rebrand: only replace the previous shipped default; keep user-customized names.
-  if ((out.header.title || '').trim().toLowerCase() === 'my planner') out.header.title = 'MomOS';
+  // Rebrand: only replace previous shipped defaults; keep user-customized names.
+  const ht = (out.header.title || '').trim().toLowerCase();
+  if (ht === 'my planner' || ht === 'momos') out.header.title = 'Mom.OS';
   return out;
 }
 
@@ -72,6 +73,12 @@ export function deriveVars(c) {
 export const varsToCss = (vars) => Object.entries(vars).map(([k, v]) => `${k}:${v}`).join(';');
 
 // ---------- apply ----------
+
+/** Escape title and accent any periods for the wordmark. */
+export function brandHTML(title) {
+  return esc(title || 'Mom.OS').replace(/\./g, '<span class="brand-dot">.</span>');
+}
+
 export function applyStyle(settings) {
   injectFontFaces();
   const st = settings.style; const root = document.documentElement;
@@ -80,10 +87,12 @@ export function applyStyle(settings) {
   root.removeAttribute('style');
   if (!theme.css) for (const [k, v] of Object.entries(deriveVars(theme.colors))) root.style.setProperty(k, v);
   const f = st.fonts;
-  const head = fontById(f.heading), body = fontById(f.body), script = fontById(f.script);
+  const head = fontById(f.heading), body = fontById(f.body), script = fontById(f.script), brandF = fontById(f.brand);
   if (head) { root.style.setProperty('--font-head', head.stack); root.style.setProperty('--font-label', head.stack); }
   if (body) root.style.setProperty('--font-ui', body.stack);
   if (script) root.style.setProperty('--font-script', script.stack);
+  if (brandF) root.style.setProperty('--font-brand', brandF.stack);
+  else root.style.removeProperty('--font-brand');
   if (st.paper.desk) root.style.setProperty('--desk', st.paper.desk);
   root.dataset.paper = st.paper.texture;
   root.dataset.stock = st.paper.stock;
@@ -96,9 +105,10 @@ export function applyStyle(settings) {
   root.classList.toggle('has-bg-image', !!img);
   // painted by a fixed body::before layer (iOS Safari ignores background-attachment: fixed)
   if (img) root.style.setProperty('--bg-image', `linear-gradient(rgba(0,0,0,${st.paper.imageDim}), rgba(0,0,0,${st.paper.imageDim})), url("${img}")`);
-  const brand = document.querySelector('.brand-name'); if (brand) brand.textContent = st.header.title || 'MomOS';
+  const brand = document.querySelector('.brand-name');
+  if (brand) brand.innerHTML = brandHTML(st.header.title || 'Mom.OS');
   const mark = document.querySelector('.brand-mark'); if (mark) mark.hidden = !st.header.showMark;
-  document.title = st.header.title ? st.header.title.replace(/^./, (c) => c.toUpperCase()) : 'MomOS';
+  document.title = st.header.title ? st.header.title.replace(/^./, (c) => c.toUpperCase()) : 'Mom.OS';
   const desk = st.paper.desk || theme.colors.desk;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', desk);
   document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')

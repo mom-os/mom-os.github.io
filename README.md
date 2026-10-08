@@ -1,6 +1,6 @@
-# MomOS: prototype v0.2
+# Mom.OS: prototype v0.2
 
-MomOS — a calm, customizable, ADHD-friendly daily planner. It's a static PWA (vanilla JS ES modules, no build step) and stores data in `localStorage`.
+Mom.OS — a calm, customizable, ADHD-friendly daily planner. It's a static PWA (vanilla JS ES modules, no build step) and stores data in `localStorage`.
 
 ## Run locally
 ```bash

@@ -1,6 +1,6 @@
 {
-  "name": "MomOS",
-  "short_name": "MomOS",
+  "name": "Mom.OS",
+  "short_name": "Mom.OS",
   "description": "A calm, customizable, ADHD-friendly daily planner.",
   "start_url": "./index.html#/myday",
   "scope": "./",

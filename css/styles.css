@@ -20,6 +20,7 @@
   --font-label: 'Josefin Sans', 'Quicksand', system-ui, sans-serif;
   --font-script: 'Sacramento', 'Snell Roundhand', cursive;
   --font-head: 'Josefin Sans', 'Quicksand', system-ui, sans-serif;
+  --font-brand: 'Josefin Sans', 'Quicksand', system-ui, sans-serif;
   color-scheme: light;
 }
 [data-theme="linen"] {
@@ -92,8 +93,12 @@ input, textarea, select { background: transparent; }
   background: var(--desk);
 }
 .brand { display: flex; align-items: center; gap: .55rem; padding-bottom: .55rem; }
-.brand-mark { width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(var(--accent) 0 38%, var(--page) 38%); box-shadow: inset 0 0 0 1.5px var(--accent), 4px 0 0 -1px var(--tab-2); }
-.brand-name { font-family: var(--font-script); font-size: 1.75rem; color: var(--script); line-height: 1; }
+.brand-mark { width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(var(--accent) 0 38%, var(--page) 38%); box-shadow: inset 0 0 0 1.5px var(--accent), 4px 0 0 -1px var(--tab-2); flex-shrink: 0; }
+.brand-name {
+  font-family: var(--font-brand); font-size: 1.2rem; font-weight: 600;
+  letter-spacing: .14em; color: var(--ink); line-height: 1; text-transform: none;
+}
+.brand-name .brand-dot { color: var(--accent); font-weight: 700; letter-spacing: 0; margin: 0 .02em; }
 .tabs { display: flex; gap: .3rem; }
 .tab {
   text-decoration: none; font-family: var(--font-label); font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 600;
@@ -430,13 +435,22 @@ input, textarea, select { background: transparent; }
 /* ============ Phone ============ */
 @media (max-width: 640px) {
   .topbar { position: fixed; top: auto; bottom: 0; left: 0; right: 0; padding: 0; background: var(--desk); box-shadow: 0 -1px 0 var(--line); }
-  .brand { display: none; }
+  .brand {
+    display: flex; position: fixed; top: 0; left: 0; right: 0; z-index: 32;
+    justify-content: flex-start; align-items: center; gap: .45rem;
+    padding: calc(env(safe-area-inset-top) + .4rem) .85rem .45rem;
+    background: color-mix(in srgb, var(--desk) 88%, transparent);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  }
+  .brand-mark { width: 22px; height: 22px; border-radius: 7px; }
+  .brand-name { font-size: 1.02rem; letter-spacing: .12em; }
   .tabs { flex: 1; gap: 0; padding: .35rem .4rem calc(.35rem + env(safe-area-inset-bottom)); }
   .tab { flex: 1; text-align: center; transform: none; border-radius: 12px; margin: 0 .15rem; padding: .7rem .2rem; font-size: .7rem; letter-spacing: .1em; box-shadow: none; opacity: .75; }
   .tab:hover { transform: none; }
   .tab.active { opacity: 1; padding: .7rem .2rem; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 18%, transparent); }
-  .view { padding: calc(env(safe-area-inset-top) + .2rem) .7rem calc(5.5rem + env(safe-area-inset-bottom)); }
-  .sample-banner { width: calc(100% - 1.4rem); margin-top: calc(env(safe-area-inset-top) + .5rem); font-size: .8rem; }
+  .view { padding: calc(env(safe-area-inset-top) + 2.85rem) .7rem calc(5.5rem + env(safe-area-inset-bottom)); }
+  .sample-banner { width: calc(100% - 1.4rem); margin-top: .45rem; font-size: .8rem; }
   .view-head { padding: .6rem 0 .5rem; }
   .head-actions .btn span { display: none; }
   .head-actions .btn { padding: .45rem .7rem; }
@@ -633,6 +647,7 @@ input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 .ft-sample { font-size: 1.05rem; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
 .font-grid.heading .ft-sample { letter-spacing: .08em; font-size: .98rem; }
 .font-grid.script .ft-sample { font-size: 1.55rem; color: var(--script); line-height: 1.35; }
+.font-grid.brand .ft-sample { font-size: 1.05rem; font-weight: 600; letter-spacing: .12em; color: var(--ink); }
 .ft-name { font-size: .78rem; font-weight: 700; } .font-tile small { font-size: .7rem; color: var(--ink-soft); }
 
 /* stickers panel */
@@ -683,7 +698,8 @@ input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 .has-bg-image .pv { background: transparent; }
 .pv-top { display: flex; align-items: flex-end; gap: .4rem; padding: 0 .2rem; }
 .pv-top .brand-mark { width: 16px; height: 16px; border-radius: 5px; margin-bottom: .35rem; }
-.pv-brand { font-family: var(--font-script); color: var(--script); font-size: 1.35rem; line-height: 1; padding-bottom: .3rem; }
+.pv-brand { font-family: var(--font-brand); color: var(--ink); font-size: .95rem; font-weight: 600; letter-spacing: .12em; line-height: 1; padding-bottom: .3rem; }
+.pv-brand .brand-dot { color: var(--accent); font-weight: 700; letter-spacing: 0; }
 .pv-tabs { margin-left: auto; display: flex; gap: 3px; } .pv-tabs i { width: 28px; height: 12px; border-radius: 6px 6px 0 0; background: var(--tab-1); }
 .pv-tabs i:nth-child(2) { background: var(--tab-2); } .pv-tabs i:nth-child(3) { background: var(--tab-3); } .pv-tabs i:nth-child(4) { background: var(--tab-4); }
 .pv-row { display: flex; gap: .45rem; }

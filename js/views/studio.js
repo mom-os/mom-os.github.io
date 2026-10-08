@@ -4,7 +4,7 @@ import { PRESETS, QUOTE_LIBRARY, QUOTE_CATS, PATTERNS, STOCKS, DAY_LAYOUTS } fro
 import { fontsFor } from '../style/fonts.js';
 import { PACKS, EMOJI, stickerHTML } from '../style/stickers.js';
 import { themeById, deriveVars, varsToCss, duplicateTheme, defaultStyle, quotePool,
-  exportStylePayload, importStylePayload, BG_KEY } from '../style/engine.js';
+  exportStylePayload, importStylePayload, BG_KEY, brandHTML } from '../style/engine.js';
 import { PALETTE, defaultTemplates } from '../templates.js';
 import { defaultState } from '../store.js';
 import { todayKey, addDays, isWeekend } from '../dates.js';
@@ -59,7 +59,7 @@ function previewHTML(ctx) {
     body = `<div class="pv-cols n${cols.length}">${cols.map((c) => `<div>${c.map((s) => pvSec(s, s.role === 'issues' ? 'p:sparkle' : '')).join('')}</div>`).join('')}</div>`;
   }
   return `<div class="pv" aria-label="Live preview">
-    <div class="pv-top">${st.header.showMark ? '<span class="brand-mark"></span>' : ''}<span class="pv-brand">${esc(st.header.title || 'MomOS')}</span>
+    <div class="pv-top">${st.header.showMark ? '<span class="brand-mark"></span>' : ''}<span class="pv-brand">${brandHTML(st.header.title || 'Mom.OS')}</span>
       <span class="pv-tabs"><i></i><i></i><i></i><i></i></span></div>
     <div class="pv-row">
       <div class="pv-page paper ${L.day === 'vertical' && L.spiral ? 'with-spine' : ''}">
@@ -96,15 +96,22 @@ function panelColors(ctx) {
       ${t.custom ? '<button class="btn small ghost danger" data-a="del-theme">Delete theme</button>' : ''}
     </div>`;
 }
-function fontTiles(ctx, cat, sample) {
-  const cur = ctx.store.style.fonts[cat === 'heading' ? 'heading' : cat];
+function fontTiles(ctx, cat, sample, opts = {}) {
+  const pool = opts.pool || cat;
+  const cur = ctx.store.style.fonts[cat] || 'auto';
+  const autoStack = opts.autoStack || (cat === 'script' ? 'var(--font-script)' : cat === 'body' ? 'var(--font-ui)' : cat === 'brand' ? 'var(--font-brand)' : 'var(--font-head)');
+  const autoName = opts.autoName || 'Theme default';
+  const autoNote = opts.autoNote || (cat === 'brand' ? 'Clean geometric wordmark' : 'Matches the theme');
   const tile = (id, name, stack, note) => `<button class="font-tile ${cur === id ? 'on' : ''}" data-font-cat="${cat}" data-font="${id}">
-    <span class="ft-sample" style="font-family:${esc(stack)}">${esc(sample)}</span><span class="ft-name">${esc(name)}</span><small>${esc(note)}</small></button>`;
-  return `<div class="font-grid ${cat}">${tile('auto', 'Theme default', cat === 'script' ? 'var(--font-script)' : cat === 'body' ? 'var(--font-ui)' : 'var(--font-head)', 'Matches the theme')}
-    ${fontsFor(cat).map((f) => tile(f.id, f.name, f.stack, f.note)).join('')}</div>`;
+    <span class="ft-sample" style="font-family:${esc(stack)}">${cat === 'brand' ? brandHTML(sample) : esc(sample)}</span><span class="ft-name">${esc(name)}</span><small>${esc(note)}</small></button>`;
+  return `<div class="font-grid ${cat}">${tile('auto', autoName, autoStack, autoNote)}
+    ${fontsFor(pool).map((f) => tile(f.id, f.name, f.stack, f.note)).join('')}</div>`;
 }
 function panelFonts(ctx) {
   return `<h2 class="panel-title">Fonts</h2>
+    <h3 class="panel-sub">App name</h3>
+    <p class="muted">The Mom.OS wordmark in the header. Independent of the handwritten quote font.</p>
+    ${fontTiles(ctx, 'brand', 'Mom.OS', { pool: 'heading', autoName: 'Mom.OS default', autoNote: 'Josefin Sans · clean & readable' })}
     <h3 class="panel-sub">Headings & labels</h3>${fontTiles(ctx, 'heading', "TODAY'S ISSUES")}
     <h3 class="panel-sub">Body text</h3>${fontTiles(ctx, 'body', 'Call pediatrician at 2pm')}
     <h3 class="panel-sub">Handwriting / script</h3>${fontTiles(ctx, 'script', 'Think big. Start small.')}`;
@@ -123,8 +130,9 @@ function panelStickers(ctx) {
 function panelWords(ctx) {
   const st = ctx.store.style; const q = st.quotes;
   return `<h2 class="panel-title">Quotes & header</h2>
-    <label class="field"><span>Planner name (top left)</span><input class="hdr-title" value="${esc(st.header.title)}" maxlength="32" placeholder="MomOS"></label>
+    <label class="field"><span>App name (top left)</span><input class="hdr-title" value="${esc(st.header.title)}" maxlength="32" placeholder="Mom.OS"></label>
     ${toggle('hdr-mark', st.header.showMark, 'Show the little planner icon')}
+    <p class="muted">Change the wordmark typeface under <b>Fonts → App name</b>.</p>
     <h3 class="panel-sub">Motivational quote</h3>
     ${seg('qmode', [['rotate', 'New one each day'], ['fixed', 'Keep one quote']], q.mode)}
     ${q.mode === 'fixed' ? `<label class="field"><span>Your quote</span><input class="q-fixed" value="${esc(q.fixed)}" maxlength="80"></label>
