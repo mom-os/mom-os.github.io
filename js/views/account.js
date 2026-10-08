@@ -124,8 +124,12 @@ export function panelAccount(ctx) {
   if (!user) {
     const pending = pendingEmail(ctx);
     if (pending) {
+      const rateNote = ctx.accountEmailRateLimited
+        ? `<p class="note-box">Email sending is temporarily limited (free plan allows about 2 sign-in emails per hour). If a code already arrived, enter it below. Otherwise wait about an hour and tap Resend.</p>`
+        : `<p class="muted">We sent a 6-digit code to <b>${esc(pending)}</b>. Enter it here to sign in on this device — including the home-screen app on iPhone.</p>`;
       return `<h2 class="panel-title">Account</h2>
-        <p class="muted">We sent a 6-digit code to <b>${esc(pending)}</b>. Enter it here to sign in on this device — including the home-screen app on iPhone.</p>
+        ${rateNote}
+        <p class="muted small">Code for <b>${esc(pending)}</b></p>
         <label class="field"><span>Enter the 6-digit code from your email</span>
           <input class="acct-code" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code"
             maxlength="8" placeholder="••••••" enterkeyhint="done"></label>
@@ -144,8 +148,9 @@ export function panelAccount(ctx) {
           value="${esc(ctx.accountDraftEmail || '')}"></label>
       <div class="stack">
         <button class="btn primary" data-a="acct-send-code">Email me a sign-in code</button>
+        <button class="btn ghost" data-a="acct-have-email-code">I already have a code</button>
       </div>
-      <p class="muted small">We’ll email a 6-digit code (and a link for desktop). No password. On iPhone home-screen Mom.OS, a device link code from your computer is the most reliable path.</p>`;
+      <p class="muted small">We’ll email a 6-digit code (and a link for desktop). No password. Free plan: about 2 sign-in emails per hour. On iPhone home-screen Mom.OS, after you’re signed in on a computer use <b>Link another device</b>.</p>`;
   }
   const feed = sync.feedUrl();
   const webcal = sync.webcalUrl();
@@ -182,6 +187,9 @@ export function panelAccount(ctx) {
 
 function friendlyAuthError(err) {
   const msg = (err?.message || String(err) || '').toLowerCase();
+  if (msg.includes('rate limit') || msg.includes('over_email') || msg.includes('email rate')) {
+    return 'Sign-in email limit reached (about 2 per hour on the free plan). Wait a bit, then try again — or use a device link code if another device is already signed in.';
+  }
   if (msg.includes('rate') || msg.includes('security purposes') || msg.includes('after') || msg.includes('too many')) {
     return err?.message || 'Please wait a minute before trying again.';
   }
@@ -224,9 +232,31 @@ export function bindAccountActions(view, ctx) {
         const email = (a === 'acct-resend' ? pendingEmail(ctx) : view.querySelector('.acct-email')?.value.trim()) || '';
         if (!email || !email.includes('@')) { ctx.toast('Enter a valid email'); return; }
         ctx.accountDraftEmail = email;
-        await sendSignInCode(email);
+        try {
+          await sendSignInCode(email);
+          ctx.accountEmailRateLimited = false;
+          ctx.accountPendingEmail = email;
+          ctx.toast(a === 'acct-resend' ? 'New code sent — check your email' : 'Code sent — check your email');
+        } catch (sendErr) {
+          const m = (sendErr?.message || '').toLowerCase();
+          if (m.includes('rate') || m.includes('over_email')) {
+            ctx.accountEmailRateLimited = true;
+            ctx.accountPendingEmail = email;
+            ctx.toast(friendlyAuthError(sendErr));
+            ctx.rerender();
+            setTimeout(() => view.querySelector('.acct-code')?.focus(), 50);
+            return;
+          }
+          throw sendErr;
+        }
+        ctx.rerender();
+        setTimeout(() => view.querySelector('.acct-code')?.focus(), 50);
+      } else if (a === 'acct-have-email-code') {
+        const email = view.querySelector('.acct-email')?.value.trim() || ctx.accountDraftEmail || '';
+        if (!email || !email.includes('@')) { ctx.toast('Enter your email first'); return; }
+        ctx.accountDraftEmail = email;
         ctx.accountPendingEmail = email;
-        ctx.toast(a === 'acct-resend' ? 'New code sent — check your email' : 'Code sent — check your email');
+        ctx.accountEmailRateLimited = false;
         ctx.rerender();
         setTimeout(() => view.querySelector('.acct-code')?.focus(), 50);
       } else if (a === 'acct-verify') {
@@ -240,6 +270,7 @@ export function bindAccountActions(view, ctx) {
         ctx.rerender();
       } else if (a === 'acct-change-email') {
         ctx.accountPendingEmail = '';
+        ctx.accountEmailRateLimited = false;
         ctx.rerender();
         setTimeout(() => view.querySelector('.acct-email')?.focus(), 50);
       } else if (a === 'acct-create-pair' || a === 'acct-new-pair') {
