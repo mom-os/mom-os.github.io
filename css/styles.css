@@ -980,7 +980,8 @@ input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 .sync-chip.status-error .sync-dot { background: #b45858; }
 .sync-chip.status-offline .sync-dot { background: var(--ink-faint); }
 @keyframes pulse { 50% { opacity: .35; } }
-.brand { position: relative; }
+/* keep brand position from layout rules; relative only when not phone-fixed */
+@media (min-width: 641px) { .brand { position: relative; } }
 .acct-card {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: 10px; background: var(--page);
@@ -993,7 +994,10 @@ input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 .muted.small { font-size: .82rem; }
 .acct-feed { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 @media (max-width: 640px) {
-  .sync-chip span { max-width: 4.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sync-chip { margin-left: .35rem; padding: .22rem .45rem; }
+  .sync-chip span { max-width: 3.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab { flex: 1 0 auto; min-width: 3.4rem; }
 }
 
 

@@ -23,10 +23,10 @@ const SAMPLE = {
     notes: 'Example note: ask about daycare picture day.\nExample: pick up printer ink.',
     lists: [
       { title: 'Grocery pickup', color: 'sage', items: [
-        ['Milk (example)', True], ['Bananas (example)', True], ['Tortillas (example)', False], ['Salsa (example)', False],
+        ['Milk (example)', true], ['Bananas (example)', true], ['Tortillas (example)', false], ['Salsa (example)', false],
       ]},
       { title: 'Kid stuff to pack', color: 'butter', items: [
-        ['Spare clothes (example)', False], ['Snack cup (example)', False],
+        ['Spare clothes (example)', false], ['Snack cup (example)', false],
       ]},
     ],
     reflection: { wentWell: 'Got the brochure mockups out the door (example).', carryOver: 'Still need flu-shot call (example).', focus: 'Ship the three resale orders (example).' },
@@ -55,7 +55,7 @@ const SAMPLE = {
     notes: 'Example: charge camera batteries Friday night.',
     lists: [
       { title: 'Session shot list', color: 'lavender', items: [
-        ['Wide establishing (example)', False], ['Detail: rings / details (example)', False], ['Candids between poses (example)', False],
+        ['Wide establishing (example)', false], ['Detail: rings / details (example)', false], ['Candids between poses (example)', false],
       ]},
     ],
   },
