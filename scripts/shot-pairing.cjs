@@ -26,35 +26,40 @@ function loadEnv() {
   const userId = created.user.id;
   const { data: linkData } = await admin.auth.admin.generateLink({ type: 'magiclink', email });
   const otp = linkData.properties.email_otp;
-
   const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'] });
 
   {
     const bctx = await browser.newContext({
-      viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, timezoneId: 'America/Chicago',
+      viewport: { width: 1440, height: 900 }, timezoneId: 'America/Chicago',
     });
     const page = await bctx.newPage();
-    page.on('pageerror', (e) => console.warn('pageerror', e.message));
     await page.goto(BASE + 'index.html#/style/account', { waitUntil: 'networkidle' });
-    await page.evaluate(() => sessionStorage.setItem('hideSampleBanner', '1'));
-    const signErr = await page.evaluate(async ({ email, otp, url, anon }) => {
+    await page.evaluate(async ({ email, otp, url, anon }) => {
+      sessionStorage.setItem('hideSampleBanner', '1');
       const mod = await import(new URL('./js/vendor/supabase.js', location.href).href);
       const sb = mod.createClient(url, anon);
       const { error } = await sb.auth.verifyOtp({ email, token: otp, type: 'email' });
-      return error ? error.message : null;
+      if (error) throw error;
     }, { email, otp, url: env.SUPABASE_URL, anon: env.SUPABASE_ANON_KEY });
-    if (signErr) throw new Error('sign-in failed: ' + signErr);
     await page.waitForTimeout(1000);
     await page.goto(BASE + 'index.html#/style/account', { waitUntil: 'networkidle' });
     await page.evaluate(() => {
       sessionStorage.setItem('hideSampleBanner', '1');
       window.__planner?.ctx?.rerender?.();
     });
-    await page.waitForTimeout(700);
-    await page.locator('[data-a="acct-create-pair"]').waitFor({ timeout: 10000 });
-    await page.locator('[data-a="acct-create-pair"]').click();
-    await page.waitForSelector('.pair-code-display', { timeout: 12000 });
-    await page.waitForTimeout(500);
+    await page.waitForSelector('[data-a="acct-create-pair"]', { timeout: 10000 });
+    const createResult = await page.evaluate(async () => {
+      const mod = await import(new URL('./js/sync/client.js', location.href).href);
+      const data = await mod.createPairingCode();
+      window.__planner.ctx.accountPairing = {
+        code: data.code, display: data.display, expires_at: data.expires_at, pair_url: data.pair_url,
+      };
+      window.__planner.ctx.rerender();
+      return { display: data.display };
+    });
+    if (!createResult.display) throw new Error('no display code');
+    await page.waitForSelector('.pair-code-display', { timeout: 8000 });
+    await page.waitForTimeout(400);
     await page.screenshot({ path: path.join(OUT, 'live-pair-code-desktop.png'), fullPage: false });
     console.log('saved live-pair-code-desktop');
     await bctx.close();
@@ -80,6 +85,7 @@ function loadEnv() {
       if (c) { c.accountPairDraft = 'ABCD2345'; c.rerender(); }
     });
     await page.waitForSelector('.acct-pair-code', { timeout: 8000 });
+    await page.evaluate(() => document.querySelector('.pair-card')?.scrollIntoView({ block: 'start' }));
     await page.waitForTimeout(400);
     await page.screenshot({ path: path.join(OUT, 'live-pair-entry-phone.png'), fullPage: false });
     console.log('saved live-pair-entry-phone');
