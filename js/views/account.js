@@ -7,7 +7,7 @@ import {
 import { SyncStatus } from '../sync/engine.js';
 import { renderSVG } from '../vendor/uqr.js';
 
-const BUILD_TAG = '0.4.9';
+const BUILD_TAG = '0.5.0';
 
 const statusLabel = {
   [SyncStatus.Off]: 'Cloud off',
