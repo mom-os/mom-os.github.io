@@ -3,6 +3,11 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, SITE_URL, isSupabaseConfigured } from 
 
 let _client = null;
 
+/**
+ * Implicit flow is required for email magic-link redirects from Mail/admin
+ * generateLink: those land as #access_token=... (no PKCE code_verifier in the browser).
+ * PKCE mode rejects that URL with "Not a valid PKCE flow url" and drops the session.
+ */
 export function getSupabase() {
   if (!isSupabaseConfigured()) return null;
   if (!_client) {
@@ -11,7 +16,7 @@ export function getSupabase() {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        flowType: 'pkce',
+        flowType: 'implicit',
       },
     });
   }
@@ -24,6 +29,41 @@ export function redirectTo() {
     if (/localhost|127\.0\.0\.1/.test(o)) return o + (location.pathname.replace(/\/[^/]*$/, '/') || '/');
   } catch {}
   return SITE_URL.replace(/\/?$/, '/');
+}
+
+/** True if the current URL looks like a Supabase auth callback. */
+export function urlHasAuthCallback() {
+  try {
+    const hash = (location.hash || '').replace(/^#/, '');
+    const hp = new URLSearchParams(hash);
+    if (hp.has('access_token') || hp.has('error_description') || hp.has('refresh_token')) return true;
+    const sp = new URLSearchParams(location.search);
+    if (sp.has('code') || sp.has('error_description')) return true;
+  } catch {}
+  return false;
+}
+
+/**
+ * Wait for supabase-js to finish reading tokens from the URL (if any).
+ * Returns { session, fromUrl, errorMessage }.
+ */
+export async function recoverAuthFromUrl() {
+  const sb = getSupabase();
+  if (!sb) return { session: null, fromUrl: false, errorMessage: null };
+  const fromUrl = urlHasAuthCallback();
+  const { data, error } = await sb.auth.getSession();
+  if (error) return { session: null, fromUrl, errorMessage: error.message };
+  // After implicit success, gotrue clears hash to ""; put a real app route back.
+  if (fromUrl && data.session) {
+    const clean = location.pathname + location.search + '#/myday';
+    if (location.hash !== '#/myday') {
+      history.replaceState(null, '', clean);
+    }
+  } else if (fromUrl && !data.session) {
+    // Failed callback — strip broken auth hash so the router can work
+    history.replaceState(null, '', location.pathname + location.search + '#/style/account');
+  }
+  return { session: data.session || null, fromUrl, errorMessage: null };
 }
 
 /** Send a 6-digit email code (and a desktop-friendly link in the same email). */
@@ -40,18 +80,32 @@ export async function sendSignInCode(email) {
   if (error) throw error;
 }
 
-/** Verify the 6-digit code from the email inside this app (works for home-screen PWAs). */
+/**
+ * Verify the 6-digit code. Admin generateLink(type:'magiclink') OTPs verify as
+ * type magiclink (and also as email). Prefer magiclink first so a wrong-type
+ * attempt never surfaces a misleading "expired" before the right type runs.
+ */
 export async function verifySignInCode(email, token) {
   const sb = getSupabase();
   if (!sb) throw new Error('Cloud sync is not configured yet');
   const code = String(token || '').replace(/\s+/g, '');
   const addr = String(email || '').trim();
   let data, error;
-  ({ data, error } = await sb.auth.verifyOtp({ email: addr, token: code, type: 'email' }));
+  ({ data, error } = await sb.auth.verifyOtp({ email: addr, token: code, type: 'magiclink' }));
   if (error) {
-    ({ data, error } = await sb.auth.verifyOtp({ email: addr, token: code, type: 'magiclink' }));
+    ({ data, error } = await sb.auth.verifyOtp({ email: addr, token: code, type: 'email' }));
   }
-  if (error) throw error;
+  if (error) {
+    const msg = (error.message || '').toLowerCase();
+    if (msg.includes('expired') || msg.includes('invalid') || error.code === 'otp_expired') {
+      const e = new Error(
+        'That code is no longer valid. If you already tapped the link in the email, try refreshing — you may already be signed in. Otherwise ask for a new code.',
+      );
+      e.code = error.code;
+      throw e;
+    }
+    throw error;
+  }
   return data;
 }
 

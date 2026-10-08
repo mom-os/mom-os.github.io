@@ -10,6 +10,7 @@ import { renderStudio } from './views/studio.js';
 import { SyncEngine, SyncStatus } from './sync/engine.js';
 import { syncChipHTML } from './views/account.js';
 import { isSupabaseConfigured } from './config.js';
+import { recoverAuthFromUrl, urlHasAuthCallback } from './sync/client.js';
 
 const store = new Store();
 if (!store.state.meta.seeded) seedSample(store);
@@ -44,11 +45,14 @@ function renderSyncChip() {
   brand.querySelector('.sync-chip')?.addEventListener('click', () => ctx.go('#/style/account'));
 }
 
-ctx.sync = new SyncEngine(store, { onStatus: () => renderSyncChip() });
-ctx.sync.start().then(() => renderSyncChip()).catch((e) => console.warn('sync start', e));
 
 function parseRoute() {
-  const parts = (location.hash || '#/myday').replace(/^#\/?/, '').split('/');
+  const raw = location.hash || '#/myday';
+  // Auth redirects use #access_token=... — not an app route
+  if (raw.includes('access_token') || raw.includes('error_description') || raw.includes('refresh_token=')) {
+    return { name: 'myday', arg: todayKey() };
+  }
+  const parts = raw.replace(/^#\/?/, '').split('/');
   const name = ['month', 'day', 'myday', 'style'].includes(parts[0]) ? parts[0] : 'myday';
   return { name, arg: parts[1] };
 }
@@ -116,8 +120,37 @@ function render() {
 // style edits marked silent still need the CSS re-applied (live preview without a full re-render)
 store.subscribe(() => render());
 ctx.applyStyleOnly = () => applyTheme();
-window.addEventListener('hashchange', render);
-render();
+window.addEventListener('hashchange', () => {
+  // Ignore the transient hash="" clear from supabase after reading tokens
+  if (urlHasAuthCallback()) return;
+  render();
+});
+
+async function boot() {
+  const hadCallback = urlHasAuthCallback();
+  let recovered = { session: null, fromUrl: false, errorMessage: null };
+  try {
+    recovered = await recoverAuthFromUrl();
+  } catch (e) {
+    console.warn('auth recover', e);
+  }
+  ctx.sync = new SyncEngine(store, { onStatus: () => renderSyncChip() });
+  try {
+    await ctx.sync.start();
+  } catch (e) {
+    console.warn('sync start', e);
+  }
+  render();
+  renderSyncChip();
+  if (recovered.fromUrl && recovered.session) {
+    ctx.toast('Signed in — syncing…');
+    if (!location.hash.startsWith('#/')) ctx.go('#/myday');
+  } else if (hadCallback && !recovered.session) {
+    ctx.go('#/style/account');
+    ctx.toast(recovered.errorMessage || 'Sign-in link didn’t stick — try the 6-digit code, or ask for a new link.');
+  }
+}
+boot();
 
 function showSwUpdateBanner(reg) {
   if (document.getElementById('sw-update-banner')) return;
