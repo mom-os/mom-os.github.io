@@ -92,11 +92,11 @@ input, textarea, select { background: transparent; }
   padding: calc(env(safe-area-inset-top) + .6rem) max(1.25rem, env(safe-area-inset-right)) 0 max(1.25rem, env(safe-area-inset-left));
   background: var(--desk);
 }
-.brand { display: flex; align-items: center; gap: .55rem; padding-bottom: .55rem; }
-.brand-mark { width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(var(--accent) 0 38%, var(--page) 38%); box-shadow: inset 0 0 0 1.5px var(--accent), 4px 0 0 -1px var(--tab-2); flex-shrink: 0; }
+.brand { display: flex; align-items: center; gap: .65rem; padding-bottom: .55rem; }
+.brand-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(var(--accent) 0 38%, var(--page) 38%); box-shadow: inset 0 0 0 1.5px var(--accent), 4px 0 0 -1px var(--tab-2); flex-shrink: 0; }
 .brand-name {
-  font-family: var(--font-brand); font-size: 1.2rem; font-weight: 600;
-  letter-spacing: .14em; color: var(--ink); line-height: 1; text-transform: none;
+  font-family: var(--font-brand); font-size: 1.45rem; font-weight: 600;
+  letter-spacing: .16em; color: var(--ink); line-height: 1; text-transform: none;
 }
 .brand-name .brand-dot { color: var(--accent); font-weight: 700; letter-spacing: 0; margin: 0 .02em; }
 .tabs { display: flex; gap: .3rem; }
@@ -434,22 +434,29 @@ input, textarea, select { background: transparent; }
 
 /* ============ Phone ============ */
 @media (max-width: 640px) {
+  /* Fixed Mom.OS bar height (safe-area + bar chrome). Used to clear content below. */
+  :root {
+    --brand-bar-offset: calc(env(safe-area-inset-top, 0px) + 3.5rem);
+  }
+  .app { padding-top: var(--brand-bar-offset); }
   .topbar { position: fixed; top: auto; bottom: 0; left: 0; right: 0; padding: 0; background: var(--desk); box-shadow: 0 -1px 0 var(--line); }
   .brand {
     display: flex; position: fixed; top: 0; left: 0; right: 0; z-index: 32;
-    justify-content: flex-start; align-items: center; gap: .45rem;
-    padding: calc(env(safe-area-inset-top) + .4rem) .85rem .45rem;
-    background: color-mix(in srgb, var(--desk) 88%, transparent);
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-    border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+    justify-content: flex-start; align-items: center; gap: .55rem;
+    min-height: var(--brand-bar-offset);
+    padding: calc(env(safe-area-inset-top, 0px) + .55rem) .9rem .6rem;
+    box-sizing: border-box;
+    background: var(--desk);
+    border-bottom: 1px solid var(--line);
   }
-  .brand-mark { width: 22px; height: 22px; border-radius: 7px; }
-  .brand-name { font-size: 1.02rem; letter-spacing: .12em; }
+  .brand-mark { width: 26px; height: 26px; border-radius: 8px; }
+  .brand-name { font-size: 1.22rem; letter-spacing: .14em; }
   .tabs { flex: 1; gap: 0; padding: .35rem .4rem calc(.35rem + env(safe-area-inset-bottom)); }
   .tab { flex: 1; text-align: center; transform: none; border-radius: 12px; margin: 0 .15rem; padding: .7rem .2rem; font-size: .7rem; letter-spacing: .1em; box-shadow: none; opacity: .75; }
   .tab:hover { transform: none; }
   .tab.active { opacity: 1; padding: .7rem .2rem; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 18%, transparent); }
-  .view { padding: calc(env(safe-area-inset-top) + 2.85rem) .7rem calc(5.5rem + env(safe-area-inset-bottom)); }
+  /* .app already clears the brand bar; view only needs side/bottom padding */
+  .view { padding: .15rem .7rem calc(5.5rem + env(safe-area-inset-bottom)); }
   .sample-banner { width: calc(100% - 1.4rem); margin-top: .45rem; font-size: .8rem; }
   .view-head { padding: .6rem 0 .5rem; }
   .head-actions .btn span { display: none; }
@@ -535,6 +542,10 @@ input, textarea, select { background: transparent; }
 html.has-bg-image body::before { content: ''; position: fixed; inset: 0; z-index: -1; background-image: var(--bg-image); background-size: cover; background-position: center; pointer-events: none; }
 html.has-bg-image body { background: var(--desk); isolation: isolate; }
 .has-bg-image .topbar { background: color-mix(in srgb, var(--desk) 72%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+@media (max-width: 640px) {
+  .has-bg-image .brand, .brand { background: var(--desk); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .has-bg-image .topbar { background: var(--desk); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
 .has-bg-image .view-head .btn.ghost, .has-bg-image .view-head .icon-btn { background: color-mix(in srgb, var(--page) 80%, transparent); }
 
 /* ---------- stickers ---------- */
@@ -747,7 +758,7 @@ input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 }
 @media (max-width: 760px) {
   .studio { grid-template-columns: minmax(0, 1fr); gap: .7rem; padding-top: .3rem; }
-  .studio-nav { position: sticky; top: 0; z-index: 5; flex-wrap: nowrap; overflow-x: auto; margin: 0 -.7rem; padding: .5rem .7rem; background: var(--desk); scrollbar-width: none; }
+  .studio-nav { position: sticky; top: var(--brand-bar-offset, 0px); z-index: 5; flex-wrap: nowrap; overflow-x: auto; margin: 0 -.7rem; padding: .5rem .7rem; background: var(--desk); scrollbar-width: none; }
   .studio-nav::-webkit-scrollbar { display: none; }
   .snav { white-space: nowrap; flex: none; background: var(--page); }
   .studio-preview { position: static; order: -1; grid-row: 2; }
