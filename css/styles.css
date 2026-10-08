@@ -995,3 +995,12 @@ input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 @media (max-width: 640px) {
   .sync-chip span { max-width: 4.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+
+
+.sync-chip.status-signed_out,
+.sync-chip.subtle { opacity: .72; border-style: dashed; background: transparent; }
+.sync-chip.status-signed_out .sync-dot { background: var(--ink-faint); }
+.acct-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.35rem; letter-spacing: .28em; text-align: center; font-weight: 600;
+}

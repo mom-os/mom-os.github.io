@@ -26,14 +26,32 @@ export function redirectTo() {
   return SITE_URL.replace(/\/?$/, '/');
 }
 
-export async function signInWithEmail(email) {
+/** Send a 6-digit email code (and a desktop-friendly link in the same email). */
+export async function sendSignInCode(email) {
   const sb = getSupabase();
   if (!sb) throw new Error('Cloud sync is not configured yet');
   const { error } = await sb.auth.signInWithOtp({
     email: String(email || '').trim(),
-    options: { emailRedirectTo: redirectTo() },
+    options: {
+      shouldCreateUser: true,
+      emailRedirectTo: redirectTo(),
+    },
   });
   if (error) throw error;
+}
+
+/** Verify the 6-digit code from the email inside this app (works for home-screen PWAs). */
+export async function verifySignInCode(email, token) {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Cloud sync is not configured yet');
+  const code = String(token || '').replace(/\s+/g, '');
+  const { data, error } = await sb.auth.verifyOtp({
+    email: String(email || '').trim(),
+    token: code,
+    type: 'email',
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function signOut() {
@@ -57,3 +75,6 @@ export function onAuthChange(cb) {
   const { data } = sb.auth.onAuthStateChange((event, session) => cb(event, session));
   return () => data.subscription.unsubscribe();
 }
+
+/** @deprecated use sendSignInCode */
+export const signInWithEmail = sendSignInCode;

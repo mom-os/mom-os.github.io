@@ -6,13 +6,13 @@ import { getSupabase, getSession, onAuthChange } from './client.js';
 import { isSupabaseConfigured, SUPABASE_URL } from '../config.js';
 import { mergeDayMaps, mergeDoc, mergeMonthNotes, newer, snapshotForSync } from './merge.js';
 
-export const SyncStatus = { Off: 'off', Offline: 'offline', Syncing: 'syncing', Synced: 'synced', Error: 'error' };
+export const SyncStatus = { Off: 'off', SignedOut: 'signed_out', Offline: 'offline', Syncing: 'syncing', Synced: 'synced', Error: 'error' };
 
 export class SyncEngine {
   constructor(store, { onStatus } = {}) {
     this.store = store;
     this.onStatus = onStatus || (() => {});
-    this.status = isSupabaseConfigured() ? SyncStatus.Offline : SyncStatus.Off;
+    this.status = isSupabaseConfigured() ? SyncStatus.SignedOut : SyncStatus.Off;
     this.user = null;
     this._channel = null;
     this._pushTimer = null;
@@ -39,7 +39,7 @@ export class SyncEngine {
       }
     });
     window.addEventListener('online', () => this.fullSync());
-    window.addEventListener('offline', () => this.setStatus(SyncStatus.Offline));
+    window.addEventListener('offline', () => { if (this.user) this.setStatus(SyncStatus.Offline); });
     this._unsubAuth = onAuthChange(async (event, session) => {
       this.user = session?.user || null;
       if (session) {
@@ -49,7 +49,7 @@ export class SyncEngine {
       } else {
         this.unsubscribeRealtime();
         this.calendarToken = null;
-        this.setStatus(navigator.onLine ? SyncStatus.Offline : SyncStatus.Offline);
+        this.setStatus(SyncStatus.SignedOut);
       }
     });
     const session = await getSession();
@@ -59,7 +59,7 @@ export class SyncEngine {
       this.subscribeRealtime();
       await this.ensureCalendarToken();
     } else {
-      this.setStatus(SyncStatus.Offline);
+      this.setStatus(SyncStatus.SignedOut);
     }
   }
 

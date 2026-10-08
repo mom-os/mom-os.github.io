@@ -140,20 +140,24 @@ export const SITE_URL = 'https://jblanchard87.github.io/momos';
 export const isSupabaseConfigured = () => !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 EOCFG
 
-echo "Configuring auth URLs…"
+echo "Configuring auth URLs + OTP length…"
 api_json -X PATCH "$API/projects/$PROJECT_REF/config/auth" -d '{
   "site_url": "https://jblanchard87.github.io/momos/",
   "uri_allow_list": "https://jblanchard87.github.io/momos/**,http://127.0.0.1:8765/**,http://localhost:8765/**,http://127.0.0.1:8767/**,http://localhost:8767/**",
   "external_email_enabled": true,
-  "mailer_autoconfirm": false
+  "mailer_autoconfirm": false,
+  "mailer_otp_length": 6
 }' | python3 -c 'import sys,json
 raw=sys.stdin.read()
 try:
  d=json.loads(raw)
- print("auth ok", "site_url" in d or "SITE_URL" in str(d) or "ok")
+ print("auth ok otp_length=", d.get("mailer_otp_length"))
 except Exception:
  print("auth response", raw[:300])
 ' || echo "Warning: auth PATCH issue"
+
+echo "Applying OTP email templates (needs custom SMTP on free tier)…"
+SUPABASE_PROJECT_REF="$PROJECT_REF" bash "$ROOT/scripts/apply-auth-email-templates.sh" || echo "Warning: email templates not applied (configure custom SMTP, then re-run apply-auth-email-templates.sh)"
 
 echo "Deploying ics function…"
 supabase functions deploy ics --project-ref "$PROJECT_REF" --yes 2>&1 | tee /tmp/momos-fn-deploy.log | tail -40
