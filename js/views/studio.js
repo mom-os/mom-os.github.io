@@ -3,7 +3,7 @@
 import { PRESETS, QUOTE_LIBRARY, QUOTE_CATS, PATTERNS, STOCKS, DAY_LAYOUTS } from '../style/presets.js';
 import { LOOKS, applyLook } from '../style/looks.js';
 import { fontsFor } from '../style/fonts.js';
-import { PACKS, EMOJI, stickerHTML } from '../style/stickers.js';
+import { PACKS, EMOJI, stickerHTML, orderedPacks } from '../style/stickers.js';
 import { themeById, deriveVars, varsToCss, duplicateTheme, defaultStyle, quotePool,
   exportStylePayload, importStylePayload, BG_KEY, brandHTML } from '../style/engine.js';
 import { PALETTE, defaultTemplates } from '../templates.js';
@@ -145,12 +145,14 @@ function panelFonts(ctx) {
 function panelStickers(ctx) {
   const st = ctx.store.style.stickers;
   return `<h2 class="panel-title">Stickers</h2>
-    <p class="muted">Decorate days, sections and single lines. Add them from the <b>✦ +</b> next to a day's date, a section's <b>⋯</b> menu, or a line's clock button.</p>
+    <p class="muted">Decorate days, sections and single lines. Add them from the <b>✦ +</b> next to a day's date, a section's <b>⋯</b> menu, or a line's clock button. Turn on the packs you want in the picker.</p>
     ${toggle('stk-month', st.showInMonth, 'Show day stickers on the month', 'Little stickers in the month grid')}
-    ${Object.entries(PACKS).map(([id, p]) => `<div class="pack">
+    ${orderedPacks().map(([id, p]) => `<div class="pack" data-pack-id="${id}">
       <label class="pack-h"><input type="checkbox" class="pack-on" data-pack="${id}" ${st.packs.includes(id) ? 'checked' : ''}><b>${esc(p.name)}</b><small>${Object.keys(p.items).length} stickers</small></label>
+      ${p.desc ? `<p class="pack-desc">${esc(p.desc)}</p>` : ''}
       <div class="pack-sheet">${Object.keys(p.items).map((k) => stickerHTML('p:' + k)).join('')}</div></div>`).join('')}
     <div class="pack"><div class="pack-h"><b>Emoji</b><small>Always on · or type any emoji</small></div>
+      <p class="pack-desc">Universal marks — or paste any emoji in the picker.</p>
       <div class="pack-sheet emoji">${Object.values(EMOJI).flat().slice(0, 30).map((e) => stickerHTML('e:' + e)).join('')}</div></div>`;
 }
 function panelWords(ctx) {

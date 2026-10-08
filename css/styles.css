@@ -855,6 +855,7 @@ input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 .pack { border: 1px solid var(--line); border-radius: 14px; padding: .7rem .9rem; margin-top: .7rem; background: var(--page); }
 .pack-h { display: flex; align-items: center; gap: .5rem; } .pack-h small { color: var(--ink-soft); font-size: .75rem; margin-left: auto; }
 .pack-h input { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); }
+.pack-desc { margin: .25rem 0 0; font-size: .82rem; color: var(--ink-soft); line-height: 1.35; }
 .pack-sheet { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
 .pack-sheet .stk { width: 2.5rem; height: 2.5rem; font-size: 1.7rem; }
 .pack-sheet.emoji .stk { width: 2rem; height: 2rem; font-size: 1.4rem; }

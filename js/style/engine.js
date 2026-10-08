@@ -19,7 +19,7 @@ export function defaultStyle() {
     quotes: { mode: 'rotate', fixed: 'Think big. Start small.', useLibrary: true, cats: ['motivation', 'calm', 'mom', 'hustle', 'adhd'], custom: [], display: 'italic' },
     layout: { day: 'vertical', spiral: false, notes: true, weekStart: 0, hourStart: 6, hourEnd: 22 },
     paper: { texture: 'plain', stock: 'smooth', desk: '', hasImage: false, imageDim: 0.25 },
-    stickers: { showInMonth: false, packs: ['sweet', 'mom', 'hustle', 'seasons'], recent: [] },
+    stickers: { showInMonth: false, packs: ['sweet', 'mom', 'hustle', 'seasons', 'plant', 'business', 'resale', 'boudoir'], recent: [] },
   };
 }
 
