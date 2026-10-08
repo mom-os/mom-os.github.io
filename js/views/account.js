@@ -6,8 +6,9 @@ import {
 } from '../sync/client.js';
 import { SyncStatus } from '../sync/engine.js';
 import { renderSVG } from '../vendor/uqr.js';
+import { planLabel, isOwner, planTierKey, PRICE_MO, PRICE_YR, openProSheet, isProUnlocked } from '../plan.js';
 
-const BUILD_TAG = '0.5.7';
+const BUILD_TAG = '0.5.8';
 
 const statusLabel = {
   [SyncStatus.Off]: 'Cloud off',
@@ -160,12 +161,23 @@ export function panelAccount(ctx) {
   const feed = sync.feedUrl();
   const webcal = sync.webcalUrl();
   const pair = activePair(ctx);
+  const plan = planLabel(ctx);
   return `<h2 class="panel-title">Account</h2>
     <div class="acct-card">
-      <div><b>${esc(user.email)}</b><small class="sync-line status-${sync.status}">${st}</small></div>
+      <div><b>${esc(user.email)}</b><small class="sync-line status-${sync.status}">${st}</small>
+        <span class="plan-badge ${isOwner(ctx) ? 'founder' : ''}">${esc(plan)}</span></div>
       <button class="btn small ghost" data-a="acct-signout">Sign out</button>
     </div>
     <p class="muted">Edits sync when you’re online. This device stays usable offline — changes upload when you reconnect.</p>
+    ${(() => {
+      const tier = planTierKey(ctx);
+      if (tier === 'founder') return `<p class="plan-row"><span class="plan-badge founder">Founder · free forever</span><span class="muted small">Owner account — Pro unlocked on every device you sign into.</span></p>`;
+      if (tier === 'founding') return `<p class="plan-row"><span class="plan-badge founding">Founding mom</span><span class="muted small">Pro · thanks for believing early.</span></p>`;
+      if (tier === 'pro') return `<p class="plan-row"><span class="plan-badge pro">Pro</span><span class="muted small">${PRICE_MO} or ${PRICE_YR}</span></p>`;
+      return `<div class="plan-row free-plan"><div><span class="plan-badge">Free</span>
+        <p class="muted small">Core planner, lists, End of Day, Studio Look, teaser stickers. Pro adds Looks, full packs, Weekend Reset &amp; Sunday plan — ${PRICE_MO} or ${PRICE_YR}.</p></div>
+        <button class="btn small primary" data-a="acct-pro">See Pro</button></div>`;
+    })()}
 
     <h3 class="panel-sub">Link another device</h3>
     <p class="muted">Sign in on your iPhone home-screen app (or another computer) without email — create a short code here, then enter it there.</p>
@@ -328,6 +340,8 @@ export function bindAccountActions(view, ctx) {
         clearPairQuery();
         ctx.toast('Linked — syncing…');
         ctx.rerender();
+      } else if (a === 'acct-pro') {
+        openProSheet(btn, ctx, { reason: 'Mom.OS Pro' });
       } else if (a === 'acct-signout') {
         await signOut();
         ctx.accountPendingEmail = '';

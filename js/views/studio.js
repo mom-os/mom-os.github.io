@@ -13,6 +13,8 @@ import { icon, confirmSheet } from '../ui.js';
 import { esc, uid } from '../util.js';
 import { quoteFor } from './shared.js';
 import { panelAccount, bindAccountActions } from './account.js';
+import { packTier, isProUnlocked, canUseLook, canUseFullPack, canUseProHabits, openProSheet } from '../plan.js';
+import { seasonalTease, weekendResetBtnHTML, applyWeekendReset } from '../retention.js';
 
 const PANELS = [
   ['account', 'Account'], ['looks', 'Looks'], ['themes', 'Themes'], ['colors', 'Colors'], ['fonts', 'Fonts'], ['stickers', 'Stickers'],
@@ -85,17 +87,21 @@ function previewHTML(ctx) {
 function panelLooks(ctx) {
   const st = ctx.store.style;
   const cur = st.lookId || 'custom';
+  const unlocked = isProUnlocked(ctx);
   return `<h2 class="panel-title">Looks</h2>
-    <p class="muted">A Look sets theme, type, chrome, quotes, binding and stickers together. Tweak anything afterward — your changes stay.</p>
+    <p class="muted">A Look sets theme, type, chrome, quotes, binding and stickers together. Free includes <b>Studio</b>; other Looks unlock with Pro.</p>
     <div class="look-grid">${LOOKS.map((l) => {
       const on = cur === l.id;
+      const locked = !canUseLook(ctx, l.id);
       const sw = l.swatch.map((c) => `<i style="background:${c}"></i>`).join('');
-      return `<button class="look-card ${on ? 'on' : ''}" data-look="${l.id}" aria-pressed="${on}">
-        <div class="look-swatch">${sw}</div>
+      const state = on ? 'In use' : locked ? 'Pro' : 'Apply';
+      return `<button class="look-card ${on ? 'on' : ''} ${locked ? 'locked' : ''}" data-look="${l.id}" aria-pressed="${on}" ${locked ? 'data-pro-lock="look"' : ''}>
+        <div class="look-swatch">${sw}${locked ? '<span class="lock-pill">Pro</span>' : ''}</div>
         <div class="look-body"><b>${esc(l.name)}</b><small>${esc(l.note)}</small>
-          <div class="look-state">${on ? 'In use' : 'Apply'}</div></div>
+          <div class="look-state">${state}</div></div>
       </button>`;
     }).join('')}</div>
+    ${!unlocked ? '<p class="muted small">Studio Look stays free forever on Free. Pro unlocks every Look below.</p>' : ''}
     ${cur === 'custom' ? '<p class="note-box">You\'re on a custom mix. Pick a Look above to reset the bundle, or keep refining.</p>' : ''}`;
 }
 function panelThemes(ctx) {
@@ -144,13 +150,33 @@ function panelFonts(ctx) {
 }
 function panelStickers(ctx) {
   const st = ctx.store.style.stickers;
+  const tease = seasonalTease();
+  const unlocked = isProUnlocked(ctx);
+  const seasonNote = tease
+    ? `<div class="note-box seasonal-style-note"><div><b>${esc(tease.title)}</b><br>${esc(tease.body)} <span class="muted">${esc(tease.proNote)}</span></div></div>`
+    : '';
+  const wk = todayKey();
+  const weekendBtn = isWeekend(wk)
+    ? `<div class="menu-row" style="margin:.75rem 0">${weekendResetBtnHTML(wk)}</div>`
+    : '';
   return `<h2 class="panel-title">Stickers</h2>
     <p class="muted">Decorate days, sections and single lines. Add them from the <b>✦ +</b> next to a day's date, a section's <b>⋯</b> menu, or a line's clock button. Turn on the packs you want in the picker.</p>
+    ${seasonNote}
+    ${weekendBtn}
     ${toggle('stk-month', st.showInMonth, 'Show day stickers on the month', 'Little stickers in the month grid')}
-    ${orderedPacks().map(([id, p]) => `<div class="pack" data-pack-id="${id}">
-      <label class="pack-h"><input type="checkbox" class="pack-on" data-pack="${id}" ${st.packs.includes(id) ? 'checked' : ''}><b>${esc(p.name)}</b><small>${Object.keys(p.items).length} stickers</small></label>
+    ${orderedPacks().map(([id, p]) => {
+      const tier = packTier(id);
+      const locked = tier === 'pro' && !unlocked;
+      const badge = tier === 'pro'
+        ? `<span class="pack-tier pro">${unlocked ? 'Pro · unlocked' : 'Full pack unlocks with Pro'}</span>`
+        : `<span class="pack-tier free">Free teaser</span>`;
+      const keys = Object.keys(p.items);
+      const show = locked ? keys.slice(0, 4) : keys;
+      return `<div class="pack ${locked ? 'pack-locked' : ''}" data-pack-id="${id}">
+      <label class="pack-h"><input type="checkbox" class="pack-on" data-pack="${id}" ${st.packs.includes(id) && !locked ? 'checked' : ''} ${locked ? '' : ''}><b>${esc(p.name)}</b><small>${keys.length} stickers</small>${badge}</label>
       ${p.desc ? `<p class="pack-desc">${esc(p.desc)}</p>` : ''}
-      <div class="pack-sheet">${Object.keys(p.items).map((k) => stickerHTML('p:' + k)).join('')}</div></div>`).join('')}
+      <div class="pack-sheet">${show.map((k) => stickerHTML('p:' + k)).join('')}${locked ? '<button type="button" class="btn small pack-unlock" data-pro-pack="'+esc(id)+'">See Pro unlock</button>' : ''}</div></div>`;
+    }).join('')}
     <div class="pack"><div class="pack-h"><b>Emoji</b><small>Always on · or type any emoji</small></div>
       <p class="pack-desc">Universal marks — or paste any emoji in the picker.</p>
       <div class="pack-sheet emoji">${Object.values(EMOJI).flat().slice(0, 30).map((e) => stickerHTML('e:' + e)).join('')}</div></div>`;
@@ -320,10 +346,27 @@ export function renderStudio(view, ctx, arg) {
   };
 
   view.addEventListener('click', async (e) => {
-    const el = e.target.closest('[data-pick],[data-look],[data-wordmark],[data-font],[data-layout],[data-texture],[data-qmode],[data-qdisplay],[data-qcat],[data-quse],[data-qdel],[data-wstart],[data-tsize],[data-stock-pick],[data-sw],[data-a]');
+    const el = e.target.closest('[data-pick],[data-look],[data-wordmark],[data-font],[data-layout],[data-texture],[data-qmode],[data-qdisplay],[data-qcat],[data-quse],[data-qdel],[data-wstart],[data-tsize],[data-stock-pick],[data-sw],[data-a],[data-act],[data-pro-pack]');
     if (!el || !view.contains(el)) return; // never match attributes on <html>
     const d = el.dataset;
-    if (d.look) return commit((s) => { applyLook(s, d.look); });
+    if (d.look) {
+      if (!canUseLook(ctx, d.look)) return openProSheet(el, ctx, { reason: 'Unlock every Look' });
+      return commit((s) => { applyLook(s, d.look); });
+    }
+    if (d.proPack != null || el.dataset.proPack != null) {
+      return openProSheet(el, ctx, { reason: 'Unlock full sticker packs' });
+    }
+    if (el.dataset.act === 'weekend-reset') {
+      if (!canUseProHabits(ctx)) return openProSheet(el, ctx, { reason: 'Weekend Reset is Pro' });
+      const key = todayKey();
+      const day0 = store.getDay(key);
+      const has = (day0.lists || []).some((L) => L.title === 'Weekend reset' && L.items.some((i) => (i.text || '').trim()));
+      const run = () => { applyWeekendReset(store, key); ctx.toast('Weekend reset list ready'); ctx.go(`#/lists/${key}`); };
+      if (has) {
+        confirmSheet(el, 'Add any missing Weekend reset lines? Existing checks stay.', 'Add missing').then((ok) => { if (ok) run(); });
+      } else run();
+      return;
+    }
     if (d.wordmark) return commit((s) => { s.header.wordmark = d.wordmark; s.lookId = 'custom'; });
     if (d.pick) return commit((s) => { s.themeId = d.pick; s.lookId = 'custom'; });
     if (d.font) return commit((s) => { s.fonts[d.fontCat] = d.font; s.lookId = 'custom'; });
@@ -391,7 +434,14 @@ export function renderStudio(view, ctx, arg) {
   view.addEventListener('change', async (e) => {
     const t = e.target; const c = t.classList;
     if (t.dataset.color || t.dataset.secColor || c.contains('desk-color')) return ctx.rerender(); // refresh theme cards/labels once picking is done
-    if (c.contains('pack-on')) return commit((s) => { const p = t.dataset.pack; s.stickers.packs = t.checked ? [...new Set([...s.stickers.packs, p])] : s.stickers.packs.filter((x) => x !== p); });
+    if (c.contains('pack-on')) {
+      const pid = t.dataset.pack;
+      if (t.checked && !canUseFullPack(ctx, pid)) {
+        t.checked = false;
+        return openProSheet(t, ctx, { reason: 'Unlock full sticker packs' });
+      }
+      return commit((s) => { s.stickers.packs = t.checked ? [...new Set([...s.stickers.packs, pid])] : s.stickers.packs.filter((x) => x !== pid); });
+    }
     if (c.contains('h-start') || c.contains('h-end')) return commit((s) => {
       const a = Number(view.querySelector('.h-start').value), b = Number(view.querySelector('.h-end').value);
       s.layout.hourStart = Math.min(a, b); s.layout.hourEnd = Math.max(a, b);

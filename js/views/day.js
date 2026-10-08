@@ -3,11 +3,13 @@ import { stickerHTML } from '../style/stickers.js';
 import { openStickerPicker } from '../style/sticker-picker.js';
 import { filled } from '../store.js';
 import { PALETTE, makeItem, blueprintFromDay, sectionFromBlueprint } from '../templates.js';
-import { icon, openPopover, closePopover } from '../ui.js';
+import { icon, openPopover, closePopover, confirmSheet } from '../ui.js';
 import { hasAlarm, openAlarmEditor, ensureNotifyPermission, normalizeAlarm } from '../alarms.js';
 import { esc } from '../util.js';
 import { quoteFor } from './shared.js';
 import { openExport } from './export.js';
+import { weekendResetBtnHTML, applyWeekendReset, focusStripHTML, streakChipHTML, touchStreak, showEodNudge, eodNudgeHTML, saveRetention } from '../retention.js';
+import { canUseProHabits, openProSheet } from '../plan.js';
 
 const TIME_CHIPS = [['07:00', '7a'], ['09:00', '9a'], ['12:00', 'Noon'], ['15:00', '3p'], ['17:30', '5:30p'], ['19:30', '7:30p'], ['20:30', '8:30p']];
 
@@ -113,9 +115,11 @@ export function renderDay(view, ctx, arg) {
         <a class="btn small" href="#/myday/${key}">${icon.list}<span>My Day list</span></a>
         <a class="btn small" href="#/lists/${key}"><span>Lists</span></a>
         <a class="btn small" href="#/eod/${key}"><span>End of day</span></a>
+        ${weekendResetBtnHTML(key)}
         <button class="btn small" data-act="export">${icon.cal}<span>Export</span></button>
       </div>
     </div>
+    ${key === todayKey() ? `<div class="day-habit-wrap">${streakChipHTML(store, key)}${focusStripHTML(day)}${showEodNudge(store, key) ? eodNudgeHTML(key) : ''}</div>` : ''}
     <div class="day-body">
       <div class="day-spread paper">
         <div class="month-band" aria-hidden="true"><span>${esc(monthTitle)}</span></div>
@@ -163,6 +167,17 @@ function sortByTime(items) {
 
 function bindDay(view, ctx, key) {
   const { store } = ctx;
+  view.querySelector('form.focus-quick')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const raw = (e.target.q?.value || '').trim(); if (!raw) return;
+    store.mutateDay(key, (dd) => {
+      let sec = dd.sections.find((s) => s.role === 'issues') || dd.sections[0];
+      sec.items.push(makeItem({ text: raw }));
+    });
+    ctx.toast('Added to Top 3');
+    ctx.rerender();
+  });
+
   const secOf = (day, el) => day.sections.find((s) => s.id === el.closest('[data-sec]')?.dataset.sec);
 
   view.addEventListener('click', (e) => {
@@ -182,7 +197,36 @@ function bindDay(view, ctx, key) {
     switch (act) {
       case 'toggle':
         store.mutateDay(key, (day) => { const it = secOf(day, el).items.find((i) => i.id === itemId); it.done = !it.done; });
+        if (key === todayKey()) touchStreak(store, key);
         break;
+      case 'focus-toggle': {
+        const id = el.closest('[data-item]')?.dataset.item;
+        store.mutateDay(key, (day) => { for (const s of day.sections) { const it = s.items.find((i) => i.id === id); if (it) it.done = !it.done; } });
+        if (key === todayKey()) touchStreak(store, key);
+        break;
+      }
+      case 'dismiss-eod':
+        saveRetention(store, { eodNudgeDismissedDay: key });
+        ctx.rerender();
+        break;
+      case 'weekend-reset': {
+        if (!canUseProHabits(ctx)) { openProSheet(el, ctx, { reason: 'Weekend Reset is Pro' }); break; }
+        const day0 = store.getDay(key);
+        const has = (day0.lists || []).some((L) => L.title === 'Weekend reset' && L.items.some((i) => (i.text || '').trim()));
+        if (has) {
+          confirmSheet(el, 'Add any missing Weekend reset lines? Existing checks stay.', 'Add missing').then((ok) => {
+            if (!ok) return;
+            applyWeekendReset(store, key);
+            ctx.toast('Weekend reset list ready');
+            ctx.go(`#/lists/${key}`);
+          });
+        } else {
+          applyWeekendReset(store, key);
+          ctx.toast('Weekend reset list ready');
+          ctx.go(`#/lists/${key}`);
+        }
+        break;
+      }
       case 'add-item': {
         let newId;
         store.mutateDay(key, (day) => { const it = makeItem(); newId = it.id; secOf(day, el).items.push(it); }, { silent: true });

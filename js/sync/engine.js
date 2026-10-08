@@ -118,6 +118,10 @@ export class SyncEngine {
             style: remote.style ?? settings.style,
             showAnchors: remote.showAnchors ?? settings.showAnchors,
             anchors: remote.anchors ?? settings.anchors,
+            plan: remote.plan ?? settings.plan ?? 'free',
+            foundingMom: remote.foundingMom ?? settings.foundingMom ?? false,
+            foundingInterest: remote.foundingInterest ?? settings.foundingInterest ?? false,
+            retention: { ...(settings.retention || {}), ...(remote.retention || {}) },
             updatedAt: remote.updatedAt,
           };
         }

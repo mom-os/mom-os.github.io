@@ -1190,3 +1190,108 @@ input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
   .alarm-bell { opacity: .45; }
   .alarm-bell.on { opacity: 1; }
 }
+
+
+/* ============ Retention / habit loop ============ */
+.day-habit-wrap { display: flex; flex-direction: column; gap: .55rem; margin: 0 0 .85rem; }
+.md-hero .streak-chip { display: inline-flex; margin-top: .35rem; }
+.streak-chip {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .72rem; font-weight: 600; letter-spacing: .02em;
+  padding: .22rem .65rem; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--page));
+  color: var(--ink-soft); border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--grid));
+}
+.streak-chip.soft { background: var(--page); color: var(--ink-faint); border-color: var(--grid); font-weight: 500; }
+.focus-strip {
+  margin: .15rem 0 .85rem; padding: .75rem .9rem; border-radius: 14px;
+  background: color-mix(in srgb, var(--accent-soft) 55%, var(--page));
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--grid));
+}
+.focus-strip.empty { background: var(--page); }
+.focus-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem .75rem; margin-bottom: .45rem; }
+.focus-label {
+  font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--accent-strong, var(--accent));
+}
+.focus-hint { font-size: .8rem; color: var(--ink-soft); }
+.focus-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
+.focus-row {
+  display: flex; align-items: center; gap: .55rem; padding: .35rem .2rem;
+  --c: var(--accent);
+}
+.focus-row .check { flex: 0 0 auto; }
+.focus-text { font-size: .92rem; line-height: 1.35; }
+.focus-text time { font-variant-numeric: tabular-nums; font-weight: 650; color: var(--ink-soft); margin-right: .15rem; }
+.focus-quick { display: flex; gap: .45rem; align-items: center; }
+.focus-quick input {
+  flex: 1; min-width: 0; border: 1px solid var(--grid); border-radius: 10px;
+  padding: .5rem .7rem; background: var(--page); font: inherit;
+}
+.habit-card {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .65rem;
+  margin: 0 0 .85rem; padding: .8rem .95rem; border-radius: 14px;
+  background: var(--page); border: 1px solid var(--grid);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 4%, transparent);
+}
+.habit-card b { display: block; font-family: var(--font-head); font-weight: 550; font-size: 1rem; }
+.habit-card p { margin: .2rem 0 0; font-size: .84rem; color: var(--ink-soft); line-height: 1.4; max-width: 36rem; }
+.habit-actions { display: flex; flex-wrap: wrap; gap: .4rem; }
+.sunday-card { border-color: color-mix(in srgb, var(--secondary, var(--accent)) 35%, var(--grid)); }
+.eod-nudge { border-color: color-mix(in srgb, var(--accent) 28%, var(--grid)); }
+.seasonal-card, .seasonal-style-note { border-color: color-mix(in srgb, #c4a484 40%, var(--grid)); }
+.plan-badge {
+  display: inline-block; margin-top: .35rem; font-size: .72rem; font-weight: 600;
+  letter-spacing: .03em; color: var(--ink-soft); padding: .15rem .5rem; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--grid));
+}
+.plan-badge.founder { color: var(--ink); background: color-mix(in srgb, var(--accent) 18%, var(--page)); }
+.pack-tier {
+  margin-left: auto; font-size: .68rem; font-weight: 650; letter-spacing: .02em;
+  padding: .12rem .45rem; border-radius: 999px; white-space: nowrap;
+}
+.pack-tier.free { color: var(--ink-soft); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.pack-tier.pro { color: var(--ink-soft); background: color-mix(in srgb, var(--ink) 6%, transparent); border: 1px solid var(--grid); }
+.pack-h { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .55rem; }
+@media (max-width: 720px) {
+  .habit-card { flex-direction: column; align-items: stretch; }
+  .habit-actions { width: 100%; }
+  .habit-actions .btn { flex: 1; justify-content: center; }
+  .focus-quick { flex-direction: column; align-items: stretch; }
+}
+
+
+/* ============ Pro unlock sheet ============ */
+.look-card.locked { position: relative; opacity: .92; }
+.look-card .lock-pill, .pack-locked .lock-pill {
+  position: absolute; top: .4rem; right: .4rem;
+  font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: .15rem .4rem; border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 82%, transparent); color: #fff;
+}
+.look-swatch { position: relative; }
+.pack-locked .pack-sheet { opacity: .85; }
+.pack-unlock { margin: .35rem .15rem; }
+.popover.pro-pop { max-width: min(360px, 96vw); }
+.pro-sheet { padding: .15rem .1rem .25rem; }
+.pro-kicker {
+  font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--accent-strong, var(--accent)); margin: 0 0 .25rem;
+}
+.pro-title { font-family: var(--font-head); font-weight: 550; font-size: 1.25rem; margin: 0 0 .35rem; }
+.pro-lead { margin: 0 0 .65rem; font-size: .88rem; color: var(--ink-soft); line-height: 1.4; }
+.pro-benefits { margin: 0 0 .75rem; padding: 0 0 0 1.1rem; font-size: .86rem; line-height: 1.45; color: var(--ink); }
+.pro-benefits li { margin: .2rem 0; }
+.pro-price { display: flex; flex-direction: column; gap: .15rem; margin: 0 0 .75rem;
+  padding: .55rem .7rem; border-radius: 12px; background: color-mix(in srgb, var(--accent) 12%, var(--page));
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--grid)); }
+.pro-price b { font-weight: 700; }
+.pro-price small { color: var(--ink-soft); font-size: .75rem; }
+.pro-actions { display: flex; flex-direction: column; gap: .4rem; }
+.pro-foot { margin: .65rem 0 0; }
+.plan-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .55rem .85rem; margin: .75rem 0 1rem; }
+.plan-row.free-plan { align-items: center; justify-content: space-between;
+  padding: .7rem .85rem; border-radius: 12px; border: 1px solid var(--grid); background: var(--page); }
+.plan-row .muted.small { display: block; margin-top: .2rem; max-width: 28rem; }
+.plan-badge.pro, .plan-badge.founding { background: color-mix(in srgb, var(--accent) 20%, var(--page)); color: var(--ink); }
+.sheet .pro-sheet { padding-bottom: .5rem; }

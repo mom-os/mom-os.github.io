@@ -1,5 +1,6 @@
 import { clone, uid } from './util.js';
 import { instantiate, defaultTemplates, ensureDayExtras } from './templates.js';
+import { ensurePlanSettings } from './plan.js';
 import { defaultStyle, migrateStyle } from './style/engine.js';
 
 const nowIso = () => new Date().toISOString();
@@ -30,6 +31,16 @@ export function defaultState() {
       textSize: 'cozy',               // cozy | large
       style: defaultStyle(),          // everything the Style studio controls (see style/engine.js)
       showAnchors: true,              // show work/home anchors on weekdays in My Day
+      plan: 'free',                   // free | pro (Stripe later); owner email always unlocked
+      foundingMom: false,
+      foundingInterest: false,
+      retention: {
+        streakCount: 0,
+        streakLastDay: null,
+        sundayPromptDismissedWeek: null,
+        eodNudgeDismissedDay: null,
+        seasonalBannerDismissed: null,
+      },
       anchors: {
         weekday: [
           { id: 'anc_work', time: '07:30', end: '16:30', text: 'Work (design)' },
@@ -53,6 +64,7 @@ function migrate(s) {
   s.settings = { ...base.settings, ...(s.settings || {}) };
   s.settings.style = migrateStyle(s.settings.style && s.settings.style.layout ? s.settings.style : null, legacy);
   delete s.settings.theme; delete s.settings.quote;
+  ensurePlanSettings(s.settings);
   s.templates = { ...base.templates, ...(s.templates || {}) };
   if (!Array.isArray(s.templates.listTemplates)) s.templates.listTemplates = [];
   s.days ||= {}; s.monthNotes ||= {}; s.meta = { ...base.meta, ...(s.meta || {}) };

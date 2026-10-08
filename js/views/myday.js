@@ -2,11 +2,17 @@ import { addDays, todayKey, fromKey, isWeekend, DAY_NAMES, MONTH_NAMES, formatTi
 import { filled, dayStats } from '../store.js';
 import { makeItem, sectionFromBlueprint } from '../templates.js';
 import { hasAlarm, openAlarmEditor, ensureNotifyPermission, normalizeAlarm } from '../alarms.js';
-import { icon } from '../ui.js';
+import { icon, confirmSheet } from '../ui.js';
 import { esc } from '../util.js';
 import { quoteFor } from './shared.js';
 import { stickerHTML } from '../style/stickers.js';
 import { openExport } from './export.js';
+import {
+  focusStripHTML, streakChipHTML, touchStreak, weekendResetBtnHTML,
+  showSundayPrompt, sundayCardHTML, showEodNudge, eodNudgeHTML,
+  seasonalTease, seasonalBannerHTML, applyWeekendReset, weekKeyFor, saveRetention, retentionOf,
+} from '../retention.js';
+import { canUseProHabits, openProSheet } from '../plan.js';
 
 const TIME_RX = /(?:^|\s)(?:at\s+|@\s*)?(\d{1,2}(?::\d{2})?\s*(?:am|pm|a|p)|\d{1,2}:\d{2})(?=\s|$)/i;
 
@@ -93,6 +99,7 @@ export function renderMyDay(view, ctx, arg) {
         <a class="btn small" href="#/day/${key}">Edit day</a>
         <a class="btn small" href="#/lists/${key}">Lists</a>
         <a class="btn small" href="#/eod/${key}">End of day</a>
+        ${weekendResetBtnHTML(key)}
         <button class="btn small" data-act="export">${icon.cal}<span>Export</span></button>
       </div>
     </div>
@@ -102,9 +109,14 @@ export function renderMyDay(view, ctx, arg) {
           <div>
             <p class="script-title">My Day ${(day.stickers || []).map((v) => stickerHTML(v, 'stk-title')).join('')}</p>
             <h1 class="md-date">${DAY_NAMES[d.getDay()]}, ${MONTH_NAMES[d.getMonth()]} ${d.getDate()}${isToday ? ' <span class="today-pill">today</span>' : ''}</h1>
+            ${isToday ? streakChipHTML(store, key) : ''}
           </div>
           <div class="md-progress" title="${done} of ${total} done">${ring(done, total)}<span><b>${done}</b>/${total}</span></div>
         </header>
+        ${isToday ? focusStripHTML(day) : ''}
+        ${isToday && showSundayPrompt(store, key) ? sundayCardHTML(key, { pro: canUseProHabits(ctx) }) : ''}
+        ${isToday && showEodNudge(store, key) ? eodNudgeHTML(key) : ''}
+        ${(() => { const t = seasonalTease(); const r = retentionOf(store); return (t && r.seasonalBannerDismissed !== t.id) ? seasonalBannerHTML(t) : ''; })()}
         ${allDone ? `<div class="celebrate">${icon.spark}<div><b>All done. Look at you go!</b><span>Rest is productive too.</span></div></div>`
           : next ? `<div class="next-up c-${next.s.color}"><span class="nu-label">Next up</span><span class="nu-time">${formatTime(next.it.time)}</span><span class="nu-text">${esc(next.it.label ? next.it.label + ': ' : '')}${esc(next.it.text)}</span></div>` : ''}
         <form class="quick-add" autocomplete="off">
@@ -122,13 +134,44 @@ export function renderMyDay(view, ctx, arg) {
     </div>
   </section>`;
 
-  view.addEventListener('click', (e) => {
+  view.addEventListener('click', async (e) => {
     const el = e.target.closest('[data-act],[data-nav]'); if (!el) return;
     if (el.dataset.nav) { const n = el.dataset.nav; const nk = n === 'today' ? todayKey() : addDays(key, Number(n)); ctx.focusDate = nk; return ctx.go(`#/myday/${nk}`); }
     if (el.dataset.act === 'export') return openExport(el, ctx, key, 'day');
-    if (el.dataset.act === 'toggle') {
+    if (el.dataset.act === 'toggle' || el.dataset.act === 'focus-toggle') {
       const id = el.closest('[data-item]').dataset.item;
       store.mutateDay(key, (dd) => { for (const s of dd.sections) { const it = s.items.find((i) => i.id === id); if (it) it.done = !it.done; } });
+      if (key === todayKey()) touchStreak(store, key);
+    }
+    if (el.dataset.act === 'dismiss-sunday') {
+      saveRetention(store, { sundayPromptDismissedWeek: weekKeyFor(key) });
+      return ctx.rerender();
+    }
+    if (el.dataset.act === 'dismiss-eod') {
+      saveRetention(store, { eodNudgeDismissedDay: key });
+      return ctx.rerender();
+    }
+    if (el.dataset.act === 'dismiss-seasonal') {
+      const tease = seasonalTease();
+      if (tease) saveRetention(store, { seasonalBannerDismissed: tease.id });
+      return ctx.rerender();
+    }
+    if (el.dataset.act === 'weekend-reset') {
+      if (!canUseProHabits(ctx)) return openProSheet(el, ctx, { reason: 'Weekend Reset is Pro' });
+      const day = store.getDay(key);
+      const has = (day.lists || []).some((L) => L.title === 'Weekend reset' && L.items.some((i) => (i.text || '').trim()));
+      if (has) {
+        const ok = await confirmSheet(el, 'Add any missing Weekend reset lines? Existing checks stay.', 'Add missing');
+        if (!ok) return;
+      }
+      applyWeekendReset(store, key);
+      ctx.toast('Weekend reset list ready');
+      return ctx.go(`#/lists/${key}`);
+    }
+    if (el.dataset.act === 'sunday-plan') {
+      if (!canUseProHabits(ctx)) return openProSheet(el, ctx, { reason: 'Sunday week plan is Pro' });
+      const href = el.getAttribute('data-href') || el.getAttribute('href');
+      if (href) return ctx.go(href);
     }
     if (el.dataset.act === 'alarm') {
       const id = el.closest('[data-item]')?.dataset.item;
@@ -155,7 +198,7 @@ export function renderMyDay(view, ctx, arg) {
       });
     }
   });
-  view.querySelector('.quick-add').addEventListener('submit', (e) => {
+  view.querySelector('.quick-add')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const inp = e.target.q; const raw = inp.value.trim(); if (!raw) return;
     const { text, time } = parseQuickAdd(raw);
@@ -166,7 +209,19 @@ export function renderMyDay(view, ctx, arg) {
       if (!sec) { sec = sectionFromBlueprint({ title: 'To Do', color: 'teal', role: 'todo', slots: [] }); dd.sections.push(sec); }
       sec.items.push(makeItem({ text: text || raw, time })); target = sec.title;
     });
+    if (key === todayKey()) touchStreak(store, key);
     ctx.toast(time ? `Added to ${target} at ${formatTime(time, true)}` : `Added to ${target}`);
     ctx.pendingFocus = 'quick-add'; ctx.rerender();
+  });
+  view.querySelector('form.focus-quick')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const raw = (e.target.q?.value || '').trim(); if (!raw) return;
+    store.mutateDay(key, (dd) => {
+      let sec = dd.sections.find((s) => s.role === 'issues') || dd.sections.find((s) => s.role === 'todo') || dd.sections[0];
+      if (!sec) { sec = sectionFromBlueprint({ title: "Today's Issues", color: 'blush', role: 'issues', slots: [] }); dd.sections.push(sec); }
+      sec.items.push(makeItem({ text: raw }));
+    });
+    ctx.toast('Added to Top 3');
+    ctx.rerender();
   });
 }
