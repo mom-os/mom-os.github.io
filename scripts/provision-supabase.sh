@@ -159,13 +159,11 @@ except Exception:
 echo "Applying OTP email templates (needs custom SMTP on free tier)…"
 SUPABASE_PROJECT_REF="$PROJECT_REF" bash "$ROOT/scripts/apply-auth-email-templates.sh" || echo "Warning: email templates not applied (configure custom SMTP, then re-run apply-auth-email-templates.sh)"
 
-echo "Deploying ics function…"
+echo "Deploying ics + pair functions…"
 supabase functions deploy ics --project-ref "$PROJECT_REF" --yes 2>&1 | tee /tmp/momos-fn-deploy.log | tail -40
+supabase functions deploy pair --project-ref "$PROJECT_REF" --yes 2>&1 | tee /tmp/momos-pair-deploy.log | tail -40
 
-echo "Setting function secrets…"
-supabase secrets set --project-ref "$PROJECT_REF" \
-  SUPABASE_URL="$URL" \
-  SUPABASE_SERVICE_ROLE_KEY="$SERVICE" 2>&1 | tee /tmp/momos-secrets.log | tail -20
+echo "Function secrets: SUPABASE_* are platform-injected; skipping custom set."
 
 echo "Provision complete."
 echo "  Project: $PROJECT_REF"

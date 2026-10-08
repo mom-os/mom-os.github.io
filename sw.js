@@ -1,10 +1,10 @@
 // Fonts beyond the 4 defaults are cached at runtime the first time they're used.
 // App-shell service worker: cache-first for our own static files so the
 // planner opens instantly and works offline from the iPhone home screen.
-const VERSION = 'momos-v0.4.2';
+const VERSION = 'momos-v0.4.3';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/styles.css',
-  './js/app.js', './js/views/account.js', './js/sync/engine.js', './js/sync/merge.js', './js/sync/client.js', './js/vendor/supabase.js', './js/config.js', './js/store.js', './js/seed.js', './js/dates.js', './js/util.js', './js/ui.js',
+  './js/app.js', './js/views/account.js', './js/sync/engine.js', './js/sync/merge.js', './js/sync/client.js', './js/vendor/supabase.js', './js/vendor/uqr.js', './js/config.js', './js/store.js', './js/seed.js', './js/dates.js', './js/util.js', './js/ui.js',
   './js/templates.js',
   './js/style/engine.js', './js/style/looks.js', './js/style/presets.js', './js/style/fonts.js', './js/style/stickers.js', './js/style/sticker-picker.js',
   './js/views/month.js', './js/views/day.js', './js/views/myday.js', './js/views/studio.js', './js/views/export.js', './js/views/shared.js',

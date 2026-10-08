@@ -416,3 +416,6 @@ enabled = true
 
 [functions.ics]
 verify_jwt = false
+
+[functions.pair]
+verify_jwt = false

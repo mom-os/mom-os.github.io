@@ -1,7 +1,11 @@
 import { esc } from '../util.js';
-import { isSupabaseConfigured } from '../config.js';
-import { sendSignInCode, verifySignInCode, signOut } from '../sync/client.js';
+import { isSupabaseConfigured, SITE_URL } from '../config.js';
+import {
+  sendSignInCode, verifySignInCode, signOut,
+  createPairingCode, redeemPairingCode,
+} from '../sync/client.js';
 import { SyncStatus } from '../sync/engine.js';
+import { renderSVG } from '../vendor/uqr.js';
 
 const statusLabel = {
   [SyncStatus.Off]: 'Cloud off',
@@ -14,7 +18,6 @@ const statusLabel = {
 
 export function syncChipHTML(sync) {
   if (!sync || sync.status === SyncStatus.Off) return '';
-  // Subtle when signed out
   if (sync.status === SyncStatus.SignedOut) {
     return `<button type="button" class="sync-chip status-signed_out subtle" data-go-account title="Sign in to sync across devices">
       <i class="sync-dot" aria-hidden="true"></i><span>Not synced</span></button>`;
@@ -27,6 +30,86 @@ export function syncChipHTML(sync) {
 
 function pendingEmail(ctx) {
   return (ctx.accountPendingEmail || '').trim();
+}
+
+function pairDraft(ctx) {
+  return (ctx.accountPairDraft || '').trim();
+}
+
+function activePair(ctx) {
+  return ctx.accountPairing || null;
+}
+
+function pairRemainingLabel(expiresAt) {
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  if (ms <= 0) return 'Expired';
+  const m = Math.ceil(ms / 60000);
+  return m <= 1 ? 'Expires in about a minute' : `Expires in about ${m} minutes`;
+}
+
+function qrSvgFor(url) {
+  try {
+    return renderSVG(url, { ecc: 'M', border: 2 });
+  } catch {
+    return '';
+  }
+}
+
+/** Read ?pair= from hash query (e.g. #/style/account?pair=ABCD1234). */
+export function peekPairQuery() {
+  try {
+    const hash = location.hash || '';
+    const q = hash.includes('?') ? hash.slice(hash.indexOf('?') + 1) : '';
+    const params = new URLSearchParams(q);
+    const code = (params.get('pair') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return code.length === 8 ? code : '';
+  } catch { return ''; }
+}
+
+export function clearPairQuery() {
+  try {
+    const hash = location.hash || '';
+    if (!hash.includes('?')) return;
+    const path = hash.slice(0, hash.indexOf('?'));
+    history.replaceState(null, '', location.pathname + location.search + path);
+  } catch {}
+}
+
+function signedOutPairBlock(ctx) {
+  const draft = esc(pairDraft(ctx) || peekPairQuery());
+  return `
+    <div class="pair-card">
+      <h3 class="panel-sub" style="margin-top:0">Have a code from another device?</h3>
+      <p class="muted">On a phone or computer that’s already signed in, open Account → <b>Link another device</b>, then type that code here. No email needed.</p>
+      <label class="field"><span>Device link code</span>
+        <input class="acct-pair-code" type="text" inputmode="text" autocomplete="one-time-code"
+          maxlength="12" placeholder="ABCD-EFGH" spellcheck="false" enterkeyhint="done"
+          value="${draft}"></label>
+      <div class="stack">
+        <button class="btn primary" data-a="acct-redeem-pair">Link this device</button>
+      </div>
+    </div>
+    <hr class="acct-divider">
+    <h3 class="panel-sub">Or sign in with email</h3>`;
+}
+
+function pairingDisplayBlock(pair) {
+  if (!pair) return '';
+  const display = esc(pair.display || pair.code);
+  const qr = qrSvgFor(pair.pair_url || `${SITE_URL}/#/style/account?pair=${pair.code}`);
+  return `
+    <div class="pair-active">
+      <p class="muted">On the other device, open Mom.OS → Account and enter this code (or scan the QR):</p>
+      <div class="pair-code-display" aria-label="Pairing code">${display}</div>
+      <p class="muted small pair-expiry">${esc(pairRemainingLabel(pair.expires_at))}</p>
+      ${qr ? `<div class="pair-qr" aria-hidden="true">${qr}</div>` : ''}
+      <div class="menu-row">
+        <button class="btn small primary" data-a="acct-copy-pair">Copy code</button>
+        <button class="btn small ghost" data-a="acct-new-pair">New code</button>
+        <button class="btn small ghost" data-a="acct-dismiss-pair">Done</button>
+      </div>
+      <p class="muted small">Codes work once and expire after 10 minutes. Keep this screen private.</p>
+    </div>`;
 }
 
 export function panelAccount(ctx) {
@@ -51,26 +134,36 @@ export function panelAccount(ctx) {
           <button class="btn ghost" data-a="acct-resend">Resend code</button>
           <button class="btn ghost" data-a="acct-change-email">Use a different email</button>
         </div>
-        <p class="muted small">Tip: on a computer you can also tap the link in the email. On iPhone home-screen Mom.OS, the code is the reliable path.</p>`;
+        <p class="muted small">On a computer you can also tap the link in the email. Prefer linking from a signed-in device? Go back and use a device link code.</p>`;
     }
     return `<h2 class="panel-title">Account</h2>
-      <p class="muted">Sign in with your email to sync this planner across your iPhone and Windows PC. Without an account, Mom.OS still works offline on this device.</p>
+      ${signedOutPairBlock(ctx)}
+      <p class="muted">Email a sign-in code to sync across devices. Without an account, Mom.OS still works offline on this device.</p>
       <label class="field"><span>Email</span>
         <input class="acct-email" type="email" autocomplete="email" placeholder="you@example.com" enterkeyhint="send"
           value="${esc(ctx.accountDraftEmail || '')}"></label>
       <div class="stack">
         <button class="btn primary" data-a="acct-send-code">Email me a sign-in code</button>
       </div>
-      <p class="muted small">We’ll email a 6-digit code (and a link for desktop). No password.</p>`;
+      <p class="muted small">We’ll email a 6-digit code (and a link for desktop). No password. On iPhone home-screen Mom.OS, a device link code from your computer is the most reliable path.</p>`;
   }
   const feed = sync.feedUrl();
   const webcal = sync.webcalUrl();
+  const pair = activePair(ctx);
   return `<h2 class="panel-title">Account</h2>
     <div class="acct-card">
       <div><b>${esc(user.email)}</b><small class="sync-line status-${sync.status}">${st}</small></div>
       <button class="btn small ghost" data-a="acct-signout">Sign out</button>
     </div>
     <p class="muted">Edits sync when you’re online. This device stays usable offline — changes upload when you reconnect.</p>
+
+    <h3 class="panel-sub">Link another device</h3>
+    <p class="muted">Sign in on your iPhone home-screen app (or another computer) without email — create a short code here, then enter it there.</p>
+    ${pair ? pairingDisplayBlock(pair) : `
+      <div class="stack">
+        <button class="btn primary" data-a="acct-create-pair">Link another device</button>
+      </div>`}
+
     <h3 class="panel-sub">Live calendar feed</h3>
     <p class="muted">Subscribe once; Apple Calendar / Outlook refresh on their own. Timed lines from the past 30 days through the next 180 days.</p>
     <label class="field"><span>Subscription link</span>
@@ -89,16 +182,39 @@ export function panelAccount(ctx) {
 
 function friendlyAuthError(err) {
   const msg = (err?.message || String(err) || '').toLowerCase();
-  if (msg.includes('rate') || msg.includes('security purposes') || msg.includes('after')) {
-    return 'Please wait a minute before requesting another code — free-tier email is rate-limited.';
+  if (msg.includes('rate') || msg.includes('security purposes') || msg.includes('after') || msg.includes('too many')) {
+    return err?.message || 'Please wait a minute before trying again.';
   }
-  if (msg.includes('invalid') || msg.includes('otp') || msg.includes('token') || msg.includes('expired')) {
-    return 'That code didn’t work. Check the digits, or resend a new code.';
+  if (msg.includes('expired')) return err.message;
+  if (msg.includes('already used')) return err.message;
+  if (msg.includes('invalid') || msg.includes('otp') || msg.includes('token') || msg.includes('didn’t work') || msg.includes('didn\'t work')) {
+    return err?.message || 'That code didn’t work. Check it, or create a new one.';
   }
   return err?.message || String(err);
 }
 
+async function doCreatePair(ctx) {
+  const data = await createPairingCode();
+  ctx.accountPairing = {
+    code: data.code,
+    display: data.display,
+    expires_at: data.expires_at,
+    pair_url: data.pair_url,
+  };
+  ctx.toast('Code ready — enter it on the other device');
+  ctx.rerender();
+}
+
 export function bindAccountActions(view, ctx) {
+  // Prefill from QR / deep link once
+  if (!ctx._pairQueryApplied) {
+    const q = peekPairQuery();
+    if (q) {
+      ctx.accountPairDraft = q;
+      ctx._pairQueryApplied = true;
+    }
+  }
+
   view.addEventListener('click', async (e) => {
     const a = e.target.closest('[data-a]')?.dataset.a;
     if (!a || !a.startsWith('acct-')) return;
@@ -126,9 +242,30 @@ export function bindAccountActions(view, ctx) {
         ctx.accountPendingEmail = '';
         ctx.rerender();
         setTimeout(() => view.querySelector('.acct-email')?.focus(), 50);
+      } else if (a === 'acct-create-pair' || a === 'acct-new-pair') {
+        await doCreatePair(ctx);
+      } else if (a === 'acct-dismiss-pair') {
+        ctx.accountPairing = null;
+        ctx.rerender();
+      } else if (a === 'acct-copy-pair') {
+        const c = ctx.accountPairing?.code;
+        if (!c) return;
+        await navigator.clipboard.writeText(c);
+        ctx.toast('Code copied');
+      } else if (a === 'acct-redeem-pair') {
+        const raw = view.querySelector('.acct-pair-code')?.value || pairDraft(ctx);
+        const code = String(raw).toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (code.length !== 8) { ctx.toast('Enter the 8-character code'); return; }
+        ctx.accountPairDraft = code;
+        await redeemPairingCode(code);
+        ctx.accountPairDraft = '';
+        clearPairQuery();
+        ctx.toast('Linked — syncing…');
+        ctx.rerender();
       } else if (a === 'acct-signout') {
         await signOut();
         ctx.accountPendingEmail = '';
+        ctx.accountPairing = null;
         ctx.toast('Signed out — data stays on this device');
         ctx.rerender();
       } else if (a === 'acct-copy-feed') {
@@ -146,6 +283,21 @@ export function bindAccountActions(view, ctx) {
     }
   });
 
+  view.addEventListener('input', (e) => {
+    if (e.target.classList.contains('acct-pair-code')) {
+      // Auto-format ABCD-EFGH while typing
+      const el = e.target;
+      const clean = el.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+      const formatted = clean.length > 4 ? `${clean.slice(0, 4)}-${clean.slice(4)}` : clean;
+      if (el.value !== formatted) {
+        const pos = formatted.length;
+        el.value = formatted;
+        try { el.setSelectionRange(pos, pos); } catch {}
+      }
+      ctx.accountPairDraft = clean;
+    }
+  });
+
   view.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
     if (e.target.classList.contains('acct-code')) {
@@ -154,6 +306,9 @@ export function bindAccountActions(view, ctx) {
     } else if (e.target.classList.contains('acct-email')) {
       e.preventDefault();
       view.querySelector('[data-a="acct-send-code"]')?.click();
+    } else if (e.target.classList.contains('acct-pair-code')) {
+      e.preventDefault();
+      view.querySelector('[data-a="acct-redeem-pair"]')?.click();
     }
   });
 }
