@@ -1,6 +1,6 @@
 -- Mom.OS sync schema: per-user documents with RLS + Realtime
 
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 
 -- Per-day planner documents
 create table if not exists public.days (
@@ -98,7 +98,7 @@ create or replace function public.ensure_calendar_token()
 returns text
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   t text;
@@ -119,7 +119,7 @@ create or replace function public.rotate_calendar_token()
 returns text
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   t text;

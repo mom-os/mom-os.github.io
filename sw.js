@@ -1,7 +1,7 @@
 // Fonts beyond the 4 defaults are cached at runtime the first time they're used.
 // App-shell service worker: cache-first for our own static files so the
 // planner opens instantly and works offline from the iPhone home screen.
-const VERSION = 'momos-v0.4.0';
+const VERSION = 'momos-v0.4.1';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/styles.css',
   './js/app.js', './js/views/account.js', './js/sync/engine.js', './js/sync/merge.js', './js/sync/client.js', './js/vendor/supabase.js', './js/config.js', './js/store.js', './js/seed.js', './js/dates.js', './js/util.js', './js/ui.js',
