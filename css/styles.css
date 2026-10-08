@@ -1023,9 +1023,12 @@ input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 }
 .pair-code-display {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: clamp(1.6rem, 4vw, 2.1rem); font-weight: 700; letter-spacing: .28em;
+  font-size: clamp(1.6rem, 4vw, 2.1rem); font-weight: 700;
   padding: .7rem .5rem; margin: .6rem 0 .2rem; color: var(--ink);
+  display: flex; justify-content: center; align-items: baseline; gap: .15rem;
 }
+.pair-code-display span { letter-spacing: .28em; }
+.pair-code-display .pair-hyphen { letter-spacing: 0; margin: 0 .1rem; opacity: .55; }
 .pair-expiry { margin: 0 0 .8rem; }
 .pair-qr {
   width: min(200px, 70vw); margin: .4rem auto 1rem;

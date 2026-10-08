@@ -100,7 +100,7 @@ function pairingDisplayBlock(pair) {
   return `
     <div class="pair-active">
       <p class="muted">On the other device, open Mom.OS → Account and enter this code (or scan the QR):</p>
-      <div class="pair-code-display" aria-label="Pairing code">${display}</div>
+      <div class="pair-code-display" aria-label="Pairing code"><span>${esc((pair.code||'').slice(0,4))}</span><span class="pair-hyphen">-</span><span>${esc((pair.code||'').slice(4))}</span></div>
       <p class="muted small pair-expiry">${esc(pairRemainingLabel(pair.expires_at))}</p>
       ${qr ? `<div class="pair-qr" aria-hidden="true">${qr}</div>` : ''}
       <div class="menu-row">
