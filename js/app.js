@@ -98,6 +98,8 @@ function render() {
   const fresh = view.cloneNode(false); view.replaceWith(fresh); view = fresh;
   view.dataset.view = route.name;
   document.body.dataset.view = route.name;
+  // cloneNode drops listeners — allow Account to re-bind on the new node
+  ctx._accountActionsBound = false;
   ({ month: renderMonth, day: renderDay, myday: renderMyDay, style: renderStudio })[route.name](view, ctx, route.arg);
 
   if (routeKey === lastRouteKey) {
