@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" data-theme="blush">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Planner</title>
+  <meta name="description" content="A calm, customizable, ADHD-friendly daily planner." />
+  <meta name="theme-color" content="#fdfbf8" />
+  <!-- iOS home-screen / full-screen support -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Planner" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">my planner</span>
+      </div>
+      <nav class="tabs" id="tabs" aria-label="Planner sections">
+        <a class="tab tab-1" data-tab="month" href="#/month">Month</a>
+        <a class="tab tab-2" data-tab="day" href="#/day">Day</a>
+        <a class="tab tab-3" data-tab="myday" href="#/myday">My Day</a>
+        <a class="tab tab-4" data-tab="style" href="#/style">Style</a>
+      </nav>
+    </header>
+    <div id="sample-banner" class="sample-banner" hidden></div>
+    <main id="view" class="view" tabindex="-1"></main>
+  </div>
+  <div id="popover-root"></div>
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
