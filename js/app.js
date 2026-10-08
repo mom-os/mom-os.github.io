@@ -133,7 +133,7 @@ function showSwUpdateBanner(reg) {
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => {
     const swUrl = new URL('../sw.js', import.meta.url);
-    navigator.serviceWorker.register(swUrl, { scope: new URL('../', import.meta.url).pathname })
+    navigator.serviceWorker.register(swUrl, { scope: new URL('../', import.meta.url).pathname, updateViaCache: 'none' })
       .then((reg) => {
         if (reg.waiting) showSwUpdateBanner(reg);
         reg.addEventListener('updatefound', () => {

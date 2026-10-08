@@ -7,6 +7,8 @@ import {
 import { SyncStatus } from '../sync/engine.js';
 import { renderSVG } from '../vendor/uqr.js';
 
+const BUILD_TAG = '0.4.7';
+
 const statusLabel = {
   [SyncStatus.Off]: 'Cloud off',
   [SyncStatus.SignedOut]: 'Not synced',
@@ -113,6 +115,8 @@ function pairingDisplayBlock(pair) {
 }
 
 export function panelAccount(ctx) {
+  // Nudge SW update whenever Account is shown (stale handlers were a real bug)
+  try { navigator.serviceWorker?.getRegistration?.().then((r) => r?.update?.()); } catch {}
   const sync = ctx.sync;
   const configured = isSupabaseConfigured();
   if (!configured) {
@@ -141,6 +145,7 @@ export function panelAccount(ctx) {
         <p class="muted small">On a computer you can also tap the link in the email. Prefer linking from a signed-in device? Go back and use a device link code.</p>`;
     }
     return `<h2 class="panel-title">Account</h2>
+      <p class="muted small acct-build">App version Mom.OS ${BUILD_TAG}. If buttons do nothing, press Ctrl+Shift+R (hard refresh).</p>
       ${signedOutPairBlock(ctx)}
       <p class="muted">Email a sign-in code to sync across devices. Without an account, Mom.OS still works offline on this device.</p>
       <label class="field"><span>Email</span>
