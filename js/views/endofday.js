@@ -2,6 +2,7 @@ import { addDays, todayKey, fromKey, DAY_NAMES, MONTH_NAMES, formatTime, timeToM
 import { filled, dayStats } from '../store.js';
 import { makeItem, makeListItem } from '../templates.js';
 import { icon, confirmSheet } from '../ui.js';
+import { hasAlarm } from '../alarms.js';
 import { esc } from '../util.js';
 import { quoteFor } from './shared.js';
 
@@ -32,7 +33,7 @@ export function renderEndOfDay(view, ctx, arg) {
       <ul>${items.map((it) => `<li class="${it.done ? 'done' : ''}">
         <span class="eod-check">${it.done ? icon.check : ''}</span>
         ${it.time ? `<span class="eod-time">${formatTime(it.time, true)}</span>` : ''}
-        ${it.label ? `<b>${esc(it.label)}:</b> ` : ''}${esc(it.text)}
+        ${it.label ? `<b>${esc(it.label)}:</b> ` : ''}${esc(it.text)}${hasAlarm(it) ? ` <span class="alarm-glyph on" title="Reminder on">${icon.bell}</span>` : ''}
       </li>`).join('')}</ul>
     </section>`;
   }).join('');
@@ -81,7 +82,7 @@ export function renderEndOfDay(view, ctx, arg) {
         <ol class="eod-timeline">${timed.map(({ sec, it }) => `<li class="${it.done ? 'done' : ''} c-${sec.color}">
           <span class="eod-time">${formatTime(it.time, true)}</span>
           <span class="eod-check">${it.done ? icon.check : ''}</span>
-          <span>${it.label ? `<b>${esc(it.label)}:</b> ` : ''}${esc(it.text)} <em class="eod-sec-tag">${esc(sec.title)}</em></span>
+          <span>${it.label ? `<b>${esc(it.label)}:</b> ` : ''}${esc(it.text)}${hasAlarm(it) ? ` <span class="alarm-glyph on" title="Reminder on">${icon.bell}</span>` : ''} <em class="eod-sec-tag">${esc(sec.title)}</em></span>
         </li>`).join('')}</ol>
       </section>` : ''}
 
@@ -211,6 +212,7 @@ export function carryUnchecked(store, fromKey) {
           time: it.time || null,
           done: false,
           sticker: it.sticker || null,
+          alarm: it.alarm?.enabled ? { enabled: true, offsetMinutes: it.alarm.offsetMinutes ?? 10 } : undefined,
         }));
       }
     }

@@ -13,6 +13,7 @@ import { SyncEngine, SyncStatus } from './sync/engine.js';
 import { syncChipHTML } from './views/account.js';
 import { isSupabaseConfigured } from './config.js';
 import { recoverAuthFromUrl, urlHasAuthCallback } from './sync/client.js';
+import { startAlarmClock } from './alarms.js';
 
 const store = new Store();
 if (!store.state.meta.seeded) seedSample(store);
@@ -144,6 +145,7 @@ async function boot() {
   }
   render();
   renderSyncChip();
+  startAlarmClock(store, { toast });
   if (recovered.fromUrl && recovered.session) {
     ctx.toast('Signed in — syncing…');
     if (!location.hash.startsWith('#/')) ctx.go('#/myday');

@@ -1,6 +1,7 @@
 import { addDays, todayKey, fromKey, isWeekend, DAY_NAMES, MONTH_NAMES, formatTime, timeToMinutes, nowMinutes, parseLooseTime } from '../dates.js';
 import { filled, dayStats } from '../store.js';
 import { makeItem, sectionFromBlueprint } from '../templates.js';
+import { hasAlarm, openAlarmEditor, ensureNotifyPermission, normalizeAlarm } from '../alarms.js';
 import { icon } from '../ui.js';
 import { esc } from '../util.js';
 import { quoteFor } from './shared.js';
@@ -58,10 +59,12 @@ export function renderMyDay(view, ctx, arg) {
         <span class="md-text">${esc(t.anchor.text)}${t.anchor.end ? ` <small>until ${formatTime(t.anchor.end, true)}</small>` : ''}</span></li>`);
     } else {
       const { s, it } = t; const isNext = next && next.it.id === it.id;
+      const alarmOn = hasAlarm(it);
       rows.push(`<li class="md-row c-${s.color} ${it.done ? 'done' : ''} ${isNext ? 'next' : ''}" data-item="${it.id}">
         <span class="md-time">${formatTime(it.time, true)}</span>
         <button class="check" data-act="toggle" role="checkbox" aria-checked="${!!it.done}" aria-label="Done">${icon.check}</button>
-        <span class="md-text">${stickerHTML(it.sticker, 'stk-line')}${it.label ? `<b>${esc(it.label)}:</b> ` : ''}${esc(it.text)}</span>
+        <span class="md-text">${stickerHTML(it.sticker, 'stk-line')}${it.label ? `<b>${esc(it.label)}:</b> ` : ''}${esc(it.text)}${alarmOn ? `<span class="alarm-glyph on" title="Reminder on">${icon.bell}</span>` : ''}</span>
+        <button class="icon-btn mini alarm-bell ${alarmOn ? 'on' : ''}" data-act="alarm" aria-label="${alarmOn ? 'Reminder on' : 'Set reminder'}" aria-pressed="${alarmOn}">${icon.bell}</button>
         <span class="chip-sec c-${s.color}">${esc(s.title)}</span></li>`);
     }
   }
@@ -72,7 +75,9 @@ export function renderMyDay(view, ctx, arg) {
       <h3>${s.sticker ? stickerHTML(s.sticker, 'stk-sec') : `<span class="dot c-${s.color}"></span>`}${esc(s.title)}</h3>
       <ul>${items.map(({ it }) => `<li class="md-row ${it.done ? 'done' : ''}" data-item="${it.id}">
         <button class="check" data-act="toggle" role="checkbox" aria-checked="${!!it.done}" aria-label="Done">${icon.check}</button>
-        <span class="md-text">${stickerHTML(it.sticker, 'stk-line')}${it.label ? `<b>${esc(it.label)}:</b> ` : ''}${esc(it.text)}</span></li>`).join('')}</ul>
+        <span class="md-text">${stickerHTML(it.sticker, 'stk-line')}${it.label ? `<b>${esc(it.label)}:</b> ` : ''}${esc(it.text)}${hasAlarm(it) ? `<span class="alarm-glyph on" title="Reminder on">${icon.bell}</span>` : ''}</span>
+        <button class="icon-btn mini alarm-bell ${hasAlarm(it) ? 'on' : ''}" data-act="alarm" aria-label="Set reminder">${icon.bell}</button>
+        </li>`).join('')}</ul>
     </div>`).join('');
 
   const allDone = total > 0 && done === total;
@@ -124,6 +129,30 @@ export function renderMyDay(view, ctx, arg) {
     if (el.dataset.act === 'toggle') {
       const id = el.closest('[data-item]').dataset.item;
       store.mutateDay(key, (dd) => { for (const s of dd.sections) { const it = s.items.find((i) => i.id === id); if (it) it.done = !it.done; } });
+    }
+    if (el.dataset.act === 'alarm') {
+      const id = el.closest('[data-item]')?.dataset.item;
+      const found = store.findItem(key, id); if (!found) return;
+      openAlarmEditor(el, {
+        item: found.item,
+        onNeedPermission: async () => {
+          if (!('Notification' in window)) return;
+          if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
+          ctx.toast('Mom.OS would like to remind you about timed tasks');
+          await ensureNotifyPermission();
+        },
+        onSave: (alarm, time) => {
+          store.mutateDay(key, (dd) => {
+            for (const s of dd.sections) {
+              const it = s.items.find((i) => i.id === id);
+              if (!it) continue;
+              if (time) it.time = time;
+              it.alarm = normalizeAlarm(alarm);
+            }
+          });
+          ctx.toast(alarm?.enabled ? 'Reminder on' : 'Reminder off');
+        },
+      });
     }
   });
   view.querySelector('.quick-add').addEventListener('submit', (e) => {

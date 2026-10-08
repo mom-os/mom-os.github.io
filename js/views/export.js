@@ -24,13 +24,13 @@ export function openExport(anchor, ctx, dateKey, initial = 'day') {
   const count = (k) => collectEvents(store, ...rangeFor(k, dateKey)).length;
   const html = () => `
     <h3 class="pop-title">${icon.cal} Add to Apple Calendar</h3>
-    <p class="pop-help">Exports timed lines as an <b>.ics</b> file (Central time). Open it on your iPhone or Mac to add the events to iCloud Calendar.</p>
+    <p class="pop-help">Exports timed lines as an <b>.ics</b> file (Central time) with calendar alarms (VALARM). Lines with a bell use their offset; others can get the optional 10-minute heads-up below. Open the file on your iPhone or Mac to add events to iCloud Calendar — that is how you get lock-screen alarms today.</p>
     <div class="seg" role="radiogroup">
       ${['day', 'week', 'month'].map((k) => `<button class="seg-btn ${k === kind ? 'on' : ''}" data-k="${k}" role="radio" aria-checked="${k === kind}">
         This ${k}<small>${count(k)} timed</small></button>`).join('')}
     </div>
     <p class="pop-sub">${esc(rangeLabel(kind, dateKey))}</p>
-    <label class="chk"><input type="checkbox" id="ex-alarm" checked> 10-minute heads-up reminders</label>
+    <label class="chk"><input type="checkbox" id="ex-alarm" checked> Default 10-min reminder (items with their own bell use that instead)</label>
     <label class="chk"><input type="checkbox" id="ex-done"> Include things already checked off</label>
     <div class="pop-row">
       ${providers.icsShare.available ? '<button class="btn ghost" data-go="icsShare">Share…</button>' : ''}

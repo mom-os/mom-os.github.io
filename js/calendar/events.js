@@ -1,5 +1,6 @@
 import { eachDay, timeToMinutes, minutesToTime, addDays } from '../dates.js';
 import { filled } from '../store.js';
+import { hasAlarm, normalizeAlarm } from '../alarms.js';
 
 /**
  * Normalised, provider-agnostic event model. Every sync target (file export,
@@ -7,7 +8,8 @@ import { filled } from '../store.js';
  * never touches planner views.
  *
  * { uid, date:'YYYY-MM-DD', start:'HH:MM', endDate, end:'HH:MM', title,
- *   description, category, color, done, sourceItemId, sourceSectionId }
+ *   description, category, color, done, sourceItemId, sourceSectionId,
+ *   alarmMinutes: number|null }  // null = no per-item alarm; 0 = at time
  */
 export function collectEvents(store, startKey, endKey, { includeDone = true } = {}) {
   const out = [];
@@ -22,6 +24,7 @@ export function collectEvents(store, startKey, endKey, { includeDone = true } = 
         const endAbs = startMin + (Number(sec.duration) || 30);
         const endDate = endAbs >= 1440 ? addDays(key, 1) : key;
         const title = it.label ? `${it.label}: ${it.text.trim()}` : it.text.trim();
+        const alarm = hasAlarm(it) ? normalizeAlarm(it.alarm).offsetMinutes : null;
         out.push({
           uid: `${it.id}@momos`,
           date: key, start: it.time,
@@ -30,6 +33,7 @@ export function collectEvents(store, startKey, endKey, { includeDone = true } = 
           description: `${sec.title}${it.done ? ' (done)' : ''} · · Mom.OS`,
           color: sec.color, done: !!it.done,
           sourceItemId: it.id, sourceSectionId: sec.id,
+          alarmMinutes: alarm,
         });
       }
     }

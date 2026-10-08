@@ -7,7 +7,7 @@ import {
 import { SyncStatus } from '../sync/engine.js';
 import { renderSVG } from '../vendor/uqr.js';
 
-const BUILD_TAG = '0.5.0';
+const BUILD_TAG = '0.5.1';
 
 const statusLabel = {
   [SyncStatus.Off]: 'Cloud off',
@@ -186,7 +186,9 @@ export function panelAccount(ctx) {
       <b>iPhone (iCloud Calendar)</b><br>
       Tap the <code>webcal://</code> link, or Settings → Calendar → Accounts → Add Subscribed Calendar, paste the link, and save.<br><br>
       <b>Windows PC</b><br>
-      In iCloud for Windows / Outlook: Add calendar → From internet, paste the same link (https:// also works).
+      In iCloud for Windows / Outlook: Add calendar → From internet, paste the same link (https:// also works).<br><br>
+      <b>Reminders &amp; lock-screen alarms</b><br>
+      Tap the bell on a timed line to set a reminder. The calendar feed / .ics export includes those alarms (VALARM). True lock-screen alarms on iPhone need this iCloud calendar subscription (or a future native app). In-app browser notifications only fire while Mom.OS is open or recently used — one notification per item, never spam.
     </div>`;
 }
 

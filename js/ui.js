@@ -15,6 +15,7 @@ export const icon = {
   trash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   sort: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M5 16l3 3 3-3M16 19V5M13 8l3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   spark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z" fill="currentColor"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a5 5 0 00-5 5v2.1c0 .7-.2 1.4-.6 2L5.2 14.5c-.4.6 0 1.5.8 1.5h12c.8 0 1.2-.9.8-1.5L17.6 12.1c-.4-.6-.6-1.3-.6-2V8a5 5 0 00-5-5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 18a2 2 0 004 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
 };
 
 // ---------- popover / bottom sheet ----------

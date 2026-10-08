@@ -45,16 +45,23 @@ function utcStamp(d = new Date()) {
   return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 }
 
+function valarmLines(title, minutesBefore) {
+  // minutesBefore: 0 = at event time; >0 = before
+  const trigger = minutesBefore > 0 ? `-PT${minutesBefore}M` : 'PT0S';
+  return ['BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escapeText(title)}`,
+    `TRIGGER:${trigger}`, 'END:VALARM'];
+}
+
 /**
  * events: normalised events from calendar/events.js
- * opts: { calName, alarmMinutes (0 = none) }
+ * opts: { calName, alarmMinutes (0 = none) } — global fallback for items without per-item alarm
  */
 export function buildICS(events, { calName = 'Mom.OS', alarmMinutes = 0 } = {}) {
   const now = utcStamp();
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Mom.OS//Planner 0.3//EN',
+    'PRODID:-//Mom.OS//Planner 0.5//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${escapeText(calName)}`,
@@ -77,9 +84,12 @@ export function buildICS(events, { calName = 'Mom.OS', alarmMinutes = 0 } = {}) 
       'TRANSP:OPAQUE',
       `SEQUENCE:${Number(ev.sequence) || 0}`,
     );
-    if (alarmMinutes > 0) {
-      lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escapeText(ev.title)}`,
-        `TRIGGER:-PT${alarmMinutes}M`, 'END:VALARM');
+    // Prefer per-item alarm; else optional global export reminder
+    const per = ev.alarmMinutes;
+    if (per != null && per !== undefined) {
+      lines.push(...valarmLines(ev.title, Number(per) || 0));
+    } else if (alarmMinutes > 0) {
+      lines.push(...valarmLines(ev.title, alarmMinutes));
     }
     lines.push('END:VEVENT');
   }

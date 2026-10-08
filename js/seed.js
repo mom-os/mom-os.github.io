@@ -89,6 +89,16 @@ export function seedSample(store) {
       for (const L of day.lists) for (const it of L.items) it.sample = true;
     }
     if (data.reflection) day.reflection = { ...data.reflection };
+    // Sample reminder on the grocery pickup timed line (Oct 8)
+    if (key === '2026-10-08') {
+      for (const sec of day.sections) {
+        for (const it of sec.items) {
+          if ((it.text || '').includes('Grocery pickup') && it.time) {
+            it.alarm = { enabled: true, offsetMinutes: 15 };
+          }
+        }
+      }
+    }
     store.state.days[key] = day;
     store.virtual.delete(key);
   }

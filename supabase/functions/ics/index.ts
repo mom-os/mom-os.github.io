@@ -44,10 +44,16 @@ function timeToMinutes(hhmm: string) {
   return h * 60 + m;
 }
 
+function valarmLines(title: string, minutesBefore: number) {
+  const trigger = minutesBefore > 0 ? `-PT${minutesBefore}M` : 'PT0S';
+  return ['BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escapeText(title)}`,
+    `TRIGGER:${trigger}`, 'END:VALARM'];
+}
+
 function buildICS(events: any[], calName = 'Mom.OS') {
   const now = utcStamp();
   const lines = [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Mom.OS//Planner 0.3//EN',
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Mom.OS//Planner 0.5//EN',
     'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     `X-WR-CALNAME:${escapeText(calName)}`, `X-WR-TIMEZONE:${TZID}`,
     'REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H',
@@ -63,8 +69,11 @@ function buildICS(events: any[], calName = 'Mom.OS') {
       `CATEGORIES:${escapeText(ev.category || 'Planner')}`,
       'STATUS:CONFIRMED', 'TRANSP:OPAQUE',
       `SEQUENCE:${Number(ev.sequence) || 0}`,
-      'END:VEVENT',
     );
+    if (ev.alarmMinutes != null && ev.alarmMinutes !== undefined) {
+      lines.push(...valarmLines(ev.title, Number(ev.alarmMinutes) || 0));
+    }
+    lines.push('END:VEVENT');
   }
   lines.push('END:VCALENDAR');
   return lines.map(foldLine).join('\r\n') + '\r\n';
@@ -84,12 +93,18 @@ function collectFromDays(rows: { day_date: string; doc: any }[], startKey: strin
         const endDate = endAbs >= 1440 ? addDays(key, 1) : key;
         const title = it.label ? `${it.label}: ${it.text.trim()}` : it.text.trim();
         const seq = day.updatedAt ? Math.max(0, Math.floor(new Date(day.updatedAt).getTime() / 1000) % 100000) : 0;
+        let alarmMinutes: number | null = null;
+        if (it.alarm && it.alarm.enabled) {
+          const off = Number(it.alarm.offsetMinutes);
+          alarmMinutes = [0, 5, 10, 15, 30, 60].includes(off) ? off : 10;
+        }
         out.push({
           uid: `${it.id}@momos`,
           date: key, start: it.time, endDate, end: minutesToTime(endAbs % 1440),
           title, category: sec.title,
           description: `${sec.title}${it.done ? ' (done)' : ''} · Mom.OS`,
           sequence: seq,
+          alarmMinutes,
         });
       }
     }

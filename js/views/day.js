@@ -4,6 +4,7 @@ import { openStickerPicker } from '../style/sticker-picker.js';
 import { filled } from '../store.js';
 import { PALETTE, makeItem, blueprintFromDay, sectionFromBlueprint } from '../templates.js';
 import { icon, openPopover, closePopover } from '../ui.js';
+import { hasAlarm, openAlarmEditor, ensureNotifyPermission, normalizeAlarm } from '../alarms.js';
 import { esc } from '../util.js';
 import { quoteFor } from './shared.js';
 import { openExport } from './export.js';
@@ -15,12 +16,15 @@ export function lineHTML(sec, it, opts = {}) {
   const time = it.time
     ? `<button class="time-pill set" data-act="time" aria-label="Change time">${formatTime(it.time, true)}</button>`
     : timedRole ? `<button class="time-pill empty" data-act="time" aria-label="Add time">${icon.clock}<span>time</span></button>` : '';
+  const alarmOn = hasAlarm(it);
+  const bell = opts.noAlarm ? '' : `<button class="icon-btn mini alarm-bell ${alarmOn ? 'on' : ''}" data-act="alarm" aria-label="${alarmOn ? 'Reminder on' : 'Set reminder'}" aria-pressed="${alarmOn}">${icon.bell}</button>`;
   return `<li class="line ${it.done ? 'done' : ''}" data-item="${it.id}">
     <button class="check" data-act="toggle" role="checkbox" aria-checked="${!!it.done}" aria-label="Done">${icon.check}</button>
     ${it.label ? `<span class="slot-label">${esc(it.label)}</span>` : ''}
     ${timedRole || it.time ? time : ''}
     ${it.sticker ? stickerHTML(it.sticker, 'stk-line') : ''}
     <input class="line-text" data-fid="t-${it.id}" value="${esc(it.text)}" placeholder="${it.label ? `What's for ${esc(it.label.toLowerCase())}?` : ''}" enterkeyhint="next" aria-label="${esc(it.label || sec.title)} line">
+    ${bell}
     ${!timedRole && !it.time ? `<button class="icon-btn mini add-time" data-act="time" aria-label="Add time">${icon.clock}</button>` : ''}
     ${opts.noDelete ? '' : `<button class="icon-btn mini del" data-act="del-item" aria-label="Delete line">${icon.x}</button>`}
   </li>`;
@@ -188,6 +192,7 @@ function bindDay(view, ctx, key) {
       case 'del-item':
         ctx.withUndo('Line deleted', () => store.mutateDay(key, (day) => { const s = secOf(day, el); s.items = s.items.filter((i) => i.id !== itemId); }));
         break;
+      case 'alarm': openAlarm(el, ctx, key, itemId); break;
       case 'time': openTime(el, ctx, key, itemId); break;
       case 'sec-menu': openSectionMenu(el, ctx, key, el.closest('[data-sec]').dataset.sec); break;
       case 'add-section': {
@@ -259,6 +264,43 @@ function bindDay(view, ctx, key) {
   });
 }
 
+
+async function askNotify(ctx) {
+  if (!('Notification' in window)) {
+    ctx.toast('In-app alerts need a browser that supports notifications. Calendar reminders still work via Export / subscription.');
+    return;
+  }
+  if (Notification.permission === 'granted') return;
+  if (Notification.permission === 'denied') {
+    ctx.toast('Notifications are blocked. Use Export or the calendar feed for lock-screen reminders.');
+    return;
+  }
+  ctx.toast('Mom.OS would like to remind you about timed tasks');
+  const r = await ensureNotifyPermission();
+  if (r === 'granted') ctx.toast('Reminders on while Mom.OS is open');
+  else if (r === 'denied') ctx.toast('No in-app alerts — use calendar subscription for lock-screen alarms');
+}
+
+function openAlarm(anchor, ctx, key, itemId) {
+  const found = ctx.store.findItem(key, itemId); if (!found) return;
+  openAlarmEditor(anchor, {
+    item: found.item,
+    onNeedPermission: () => askNotify(ctx),
+    onSave: (alarm, time) => {
+      ctx.store.mutateDay(key, (day) => {
+        for (const s of day.sections) {
+          const it = s.items.find((i) => i.id === itemId);
+          if (!it) continue;
+          if (time) it.time = time;
+          it.alarm = normalizeAlarm(alarm);
+        }
+      });
+      if (alarm?.enabled) ctx.toast(time ? 'Time set · reminder on' : 'Reminder on');
+      else ctx.toast('Reminder off');
+    },
+  });
+}
+
 function openTime(anchor, ctx, key, itemId) {
   const { store } = ctx;
   const found = store.findItem(key, itemId); if (!found) return;
@@ -270,7 +312,7 @@ function openTime(anchor, ctx, key, itemId) {
     <div class="line-stk-row"><span>Sticker</span>${found.item.sticker ? stickerHTML(found.item.sticker) : ''}<button class="btn small ghost" data-stk>${found.item.sticker ? 'Change' : `${icon.spark} Add sticker`}</button></div>
     <div class="pop-row"><button class="btn ghost" data-t="">No time</button><button class="btn primary" data-done>Done</button></div>`,
   { width: 290, onClose: () => ctx.rerender() });
-  const set = (v) => store.mutateDay(key, (day) => { for (const s of day.sections) { const it = s.items.find((i) => i.id === itemId); if (it) it.time = v || null; } }, { silent: true });
+  const set = (v) => store.mutateDay(key, (day) => { for (const s of day.sections) { const it = s.items.find((i) => i.id === itemId); if (it) { it.time = v || null; if (!v && it.alarm) it.alarm.enabled = false; } } }, { silent: true });
   const inp = el.querySelector('.time-input');
   inp.addEventListener('input', () => set(inp.value));
   el.addEventListener('click', (e) => {

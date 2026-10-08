@@ -1167,3 +1167,18 @@ input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
   .eod-field textarea { border: 1px solid #ccc; }
   body { background: white !important; }
 }
+
+
+/* ============ Alarms / reminders ============ */
+.alarm-bell { color: var(--ink-faint); opacity: 0; transition: opacity .15s, color .15s, background .15s; }
+.line:hover .alarm-bell, .line:focus-within .alarm-bell,
+.md-row:hover .alarm-bell, .md-row:focus-within .alarm-bell { opacity: .7; }
+.alarm-bell.on { opacity: 1 !important; color: var(--accent-strong); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.alarm-glyph { display: inline-flex; width: .95rem; height: .95rem; vertical-align: -0.1em; margin-left: .3rem; color: var(--accent-strong); }
+.alarm-glyph svg { width: 100%; height: 100%; }
+.alarm-offsets.is-disabled { opacity: .4; pointer-events: none; }
+.alarm-enable { display: flex; align-items: center; gap: .5rem; margin: .5rem 0 .35rem; font-weight: 600; }
+@media (hover: none) {
+  .alarm-bell { opacity: .45; }
+  .alarm-bell.on { opacity: 1; }
+}
