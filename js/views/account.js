@@ -8,7 +8,7 @@ import { SyncStatus } from '../sync/engine.js';
 import { renderSVG } from '../vendor/uqr.js';
 import { planLabel, isOwner, planTierKey, PRICE_MO, PRICE_YR, openProSheet, isProUnlocked } from '../plan.js';
 
-const BUILD_TAG = '0.5.8';
+const BUILD_TAG = '0.5.9';
 
 const statusLabel = {
   [SyncStatus.Off]: 'Cloud off',
@@ -194,13 +194,13 @@ export function panelAccount(ctx) {
       <button class="btn small primary" data-a="acct-copy-feed">Copy link</button>
       <button class="btn small ghost" data-a="acct-rotate-feed">Reset link</button>
     </div>
-    <div class="note-box">
-      <b>iPhone (iCloud Calendar)</b><br>
-      Tap the <code>webcal://</code> link, or Settings → Calendar → Accounts → Add Subscribed Calendar, paste the link, and save.<br><br>
-      <b>Windows PC</b><br>
-      In iCloud for Windows / Outlook: Add calendar → From internet, paste the same link (https:// also works).<br><br>
-      <b>Reminders &amp; lock-screen alarms</b><br>
-      Tap the bell on a timed line to set a reminder. The calendar feed / .ics export includes those alarms (VALARM). True lock-screen alarms on iPhone need this iCloud calendar subscription (or a future native app). In-app browser notifications only fire while Mom.OS is open or recently used — one notification per item, never spam.
+    <div class="note-box how-to">
+      <div class="how-block"><b>iPhone (iCloud Calendar)</b>
+        Tap the <code>webcal://</code> link, or Settings → Calendar → Accounts → Add Subscribed Calendar, paste the link, and save.</div>
+      <div class="how-block"><b>Windows PC</b>
+        In iCloud for Windows / Outlook: Add calendar → From internet, paste the same link (https:// also works).</div>
+      <div class="how-block"><b>Reminders &amp; lock-screen alarms</b>
+        Tap the bell on a timed line to set a reminder. The calendar feed / .ics export includes those alarms (VALARM). True lock-screen alarms on iPhone need this iCloud calendar subscription (or a future native app). In-app browser notifications only fire while Mom.OS is open or recently used — one notification per item, never spam.</div>
     </div>`;
 }
 

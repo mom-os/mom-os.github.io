@@ -316,19 +316,20 @@ export function renderStudio(view, ctx, arg) {
   const { store } = ctx;
   const panel = RENDER[arg] ? arg : (ctx.studioPanel || 'looks');
   ctx.studioPanel = panel;
-  const showPv = ctx.studioPreview !== false;
+  const hidePreview = panel === 'account';
+  const showPv = !hidePreview && ctx.studioPreview !== false;
 
   view.innerHTML = `
-  <section class="studio">
+  <section class="studio ${hidePreview ? 'no-preview' : ''}">
     <nav class="studio-nav" aria-label="Style studio sections">
       <p class="script-title studio-title">Style</p>
       ${PANELS.map(([id, l]) => `<a class="snav ${id === panel ? 'on' : ''}" href="#/style/${id}">${l}</a>`).join('')}
     </nav>
     <div class="studio-panel paper panel-${panel}">${RENDER[panel](ctx)}</div>
-    <aside class="studio-preview ${showPv ? '' : 'collapsed'}">
+    ${hidePreview ? '' : `<aside class="studio-preview ${showPv ? '' : 'collapsed'}">
       <div class="pv-bar"><b>Live preview</b><button class="btn small ghost" data-a="pv-toggle">${showPv ? 'Hide' : 'Show'}</button></div>
       <div class="pv-holder">${previewHTML(ctx)}</div>
-    </aside>
+    </aside>`}
   </section>`;
 
   const style = store.style;

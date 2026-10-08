@@ -1,7 +1,7 @@
 // Fonts beyond the 4 defaults are cached at runtime the first time they're used.
 // App-shell service worker: network-first for shell so Account/auth fixes land quickly;
 // cache fallback keeps the iPhone home-screen app offline-capable.
-const VERSION = 'momos-v0.5.8';
+const VERSION = 'momos-v0.5.9';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/styles.css',
   './js/app.js', './js/views/account.js', './js/sync/engine.js', './js/sync/merge.js', './js/sync/client.js', './js/vendor/supabase.js', './js/vendor/uqr.js', './js/config.js', './js/store.js', './js/seed.js', './js/dates.js', './js/util.js', './js/ui.js',
