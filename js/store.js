@@ -2,6 +2,8 @@ import { clone, uid } from './util.js';
 import { instantiate, defaultTemplates } from './templates.js';
 import { defaultStyle, migrateStyle } from './style/engine.js';
 
+const nowIso = () => new Date().toISOString();
+
 /**
  * Persistence is behind an adapter so a backend (REST, Supabase, CloudKit…)
  * can replace localStorage later without touching the views.
@@ -85,6 +87,7 @@ export class Store {
     const day = this.getDay(key);
     if (!this.state.days[key]) { this.state.days[key] = day; this.virtual.delete(key); }
     fn(day);
+    day.updatedAt = nowIso();
     this.commit('day', opts);
     return day;
   }
@@ -94,16 +97,30 @@ export class Store {
   }
   setTemplate(kind, blueprint) {
     this.state.templates[kind] = blueprint;
+    this.state.templates.updatedAt = nowIso();
     this.virtual.clear(); // un-edited days pick up the new template
     this.commit('templates');
   }
-  updateSettings(patch) { Object.assign(this.state.settings, patch); this.commit('settings'); }
+  updateSettings(patch) {
+    Object.assign(this.state.settings, patch);
+    this.state.settings.updatedAt = nowIso();
+    this.commit('settings');
+  }
   get style() { return this.state.settings.style; }
   /** mutate the style object; silent=true skips the re-render (we still re-apply CSS) */
-  updateStyle(fn, opts) { fn(this.state.settings.style); this.commit('style', opts); }
+  updateStyle(fn, opts) {
+    fn(this.state.settings.style);
+    this.state.settings.updatedAt = nowIso();
+    this.commit('style', opts);
+  }
 
   getMonthNotes(mk) { return this.state.monthNotes[mk] || []; }
-  setMonthNotes(mk, list, opts) { this.state.monthNotes[mk] = list; this.commit('monthNotes', opts); }
+  setMonthNotes(mk, list, opts) {
+    this.state.monthNotes[mk] = list;
+    this.state.meta.monthNotesUpdatedAt = this.state.meta.monthNotesUpdatedAt || {};
+    this.state.meta.monthNotesUpdatedAt[mk] = nowIso();
+    this.commit('monthNotes', opts);
+  }
 
   snapshot() { return clone(this.state); }
   restore(snap) { this.state = migrate(clone(snap)); this.virtual.clear(); this.commit('restore'); }

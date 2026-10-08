@@ -7,6 +7,9 @@ import { renderMonth } from './views/month.js';
 import { renderDay } from './views/day.js';
 import { renderMyDay } from './views/myday.js';
 import { renderStudio } from './views/studio.js';
+import { SyncEngine, SyncStatus } from './sync/engine.js';
+import { syncChipHTML } from './views/account.js';
+import { isSupabaseConfigured } from './config.js';
 
 const store = new Store();
 if (!store.state.meta.seeded) seedSample(store);
@@ -14,6 +17,7 @@ if (!store.state.meta.seeded) seedSample(store);
 let view = document.getElementById('view');
 const ctx = {
   store,
+  sync: null,
   focusDate: todayKey(),
   go(hash) { if (location.hash === hash) render(); else location.hash = hash; },
   rerender: () => render(),
@@ -28,6 +32,20 @@ const ctx = {
   },
   loadSample() { seedSample(store); toast('Sample days added (Oct 8 & Oct 10, 2026)'); },
 };
+
+function renderSyncChip() {
+  const brand = document.querySelector('.brand');
+  if (!brand) return;
+  let chip = brand.querySelector('.sync-chip');
+  const html = syncChipHTML(ctx.sync);
+  if (!html) { chip?.remove(); return; }
+  if (!chip) { brand.insertAdjacentHTML('beforeend', html); chip = brand.querySelector('.sync-chip'); }
+  else chip.outerHTML = html;
+  brand.querySelector('.sync-chip')?.addEventListener('click', () => ctx.go('#/style/account'));
+}
+
+ctx.sync = new SyncEngine(store, { onStatus: () => renderSyncChip() });
+ctx.sync.start().then(() => renderSyncChip()).catch((e) => console.warn('sync start', e));
 
 function parseRoute() {
   const parts = (location.hash || '#/myday').replace(/^#\/?/, '').split('/');
@@ -68,7 +86,7 @@ function render() {
   const route = parseRoute();
   if (route.name === 'day' || route.name === 'myday') ctx.focusDate = /^\d{4}-\d{2}-\d{2}$/.test(route.arg || '') ? route.arg : ctx.focusDate;
   if (route.name === 'month' && /^\d{4}-\d{2}$/.test(route.arg || '') && !ctx.focusDate.startsWith(route.arg)) ctx.focusDate = `${route.arg}-01`;
-  applyTheme(); updateTabs(route); renderBanner();
+  applyTheme(); updateTabs(route); renderBanner(); renderSyncChip();
 
   // keep focus + caret + scroll across re-renders
   const routeKey = `${route.name}/${route.arg || ''}`;

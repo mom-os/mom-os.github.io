@@ -36,7 +36,21 @@ export function openExport(anchor, ctx, dateKey, initial = 'day') {
       ${providers.icsShare.available ? '<button class="btn ghost" data-go="icsShare">Share…</button>' : ''}
       <button class="btn primary" data-go="icsDownload">Download .ics</button>
     </div>
-    <div class="pop-later"><b>Coming later:</b> ${esc(providers.subscriptionFeed.label)} · ${esc(providers.caldav.label)}</div>`;
+    <div class="pop-sub-block">
+      <h4 class="pop-h">Subscribe in Apple Calendar</h4>
+      <p class="pop-help">Live feed of timed items (past 30 → next 180 days). Updates when Mom.OS syncs.</p>
+      ${ctx.sync?.user && ctx.sync?.webcalUrl() ? `
+        <label class="field"><span>webcal link</span>
+          <input class="ex-feed" readonly value="${esc(ctx.sync.webcalUrl())}"></label>
+        <div class="pop-row">
+          <button class="btn ghost" data-go="copyFeed">Copy link</button>
+          <a class="btn primary" href="${esc(ctx.sync.webcalUrl())}">Open subscription</a>
+        </div>
+        <p class="pop-help"><b>iPhone:</b> tap Open, or Settings → Calendar → Accounts → Add Subscribed Calendar.<br>
+        <b>Windows:</b> Outlook / iCloud for Windows → Add calendar → From internet.</p>
+      ` : `<p class="pop-help">${ctx.sync?.user ? 'Generating your feed link… open <b>Style → Account</b> if it doesn’t appear.' : 'Sign in under <b>Style → Account</b> to get a private live subscription link.'}</p>`}
+    </div>
+    <div class="pop-later"><b>Coming later:</b> ${esc(providers.caldav.label)}</div>`;
   const el = openPopover(anchor, html(), { width: 340, className: 'export-pop' });
   el.addEventListener('click', async (e) => {
     const seg = e.target.closest('[data-k]');
@@ -51,8 +65,14 @@ export function openExport(anchor, ctx, dateKey, initial = 'day') {
     const events = collectEvents(store, a, b, { includeDone });
     if (!events.length) { toast('No timed items in that range yet. Give a line a time first.'); return; }
     const filename = kind === 'day' ? `planner-${a}.ics` : kind === 'week' ? `planner-week-${a}.ics` : `planner-${a.slice(0, 7)}.ics`;
+    if (go === 'copyFeed') {
+      const v = el.querySelector('.ex-feed')?.value;
+      if (!v) return;
+      try { await navigator.clipboard.writeText(v); toast('Subscription link copied'); } catch { toast('Could not copy'); }
+      return;
+    }
     try {
-      await providers[go].export(events, { filename, calName: 'My Planner', alarmMinutes });
+      await providers[go].export(events, { filename, calName: 'Mom.OS', alarmMinutes });
       closePopover();
       toast(`${events.length} event${events.length === 1 ? '' : 's'} exported. Open the file to add to Calendar.`);
     } catch (err) { if (err?.name !== 'AbortError') toast('Export failed: ' + err.message); }

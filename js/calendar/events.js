@@ -23,11 +23,11 @@ export function collectEvents(store, startKey, endKey, { includeDone = true } = 
         const endDate = endAbs >= 1440 ? addDays(key, 1) : key;
         const title = it.label ? `${it.label}: ${it.text.trim()}` : it.text.trim();
         out.push({
-          uid: `${it.id}@jb-planner`,
+          uid: `${it.id}@momos`,
           date: key, start: it.time,
           endDate, end: minutesToTime(endAbs % 1440),
           title, category: sec.title,
-          description: `${sec.title}${it.done ? ' (done)' : ''} · from My Planner`,
+          description: `${sec.title}${it.done ? ' (done)' : ''} · · Mom.OS`,
           color: sec.color, done: !!it.done,
           sourceItemId: it.id, sourceSectionId: sec.id,
         });

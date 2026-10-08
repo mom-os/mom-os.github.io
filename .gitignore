@@ -1,3 +1,6 @@
 screenshots/
 node_modules/
-scripts/
+supabase/.temp/
+supabase/.branches/
+.env
+.env.*

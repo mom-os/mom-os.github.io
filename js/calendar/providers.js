@@ -33,8 +33,8 @@ export const providers = {
   },
   // ---- planned ----
   subscriptionFeed: {
-    id: 'subscriptionFeed', label: 'Live iCloud subscription (webcal://)', available: false,
-    plan: 'Needs a tiny backend: sync planner data up, then serve buildICS(collectEvents(range)) at a secret URL like /feeds/<token>.ics. iCloud Calendar subscribes via webcal:// and refreshes on its own schedule. Stable UIDs (itemId@jb-planner) mean edits update in place.',
+    id: 'subscriptionFeed', label: 'Live iCloud subscription (webcal://)', available: true,
+    plan: 'Supabase Edge Function /ics?token=… serves buildICS for the signed-in user. Stable UIDs (itemId@momos).',
   },
   caldav: {
     id: 'caldav', label: 'Two-way iCloud sync (CalDAV)', available: false,

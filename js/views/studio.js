@@ -12,9 +12,10 @@ import { todayKey, addDays, isWeekend } from '../dates.js';
 import { icon, confirmSheet } from '../ui.js';
 import { esc, uid } from '../util.js';
 import { quoteFor } from './shared.js';
+import { panelAccount, bindAccountActions } from './account.js';
 
 const PANELS = [
-  ['looks', 'Looks'], ['themes', 'Themes'], ['colors', 'Colors'], ['fonts', 'Fonts'], ['stickers', 'Stickers'],
+  ['account', 'Account'], ['looks', 'Looks'], ['themes', 'Themes'], ['colors', 'Colors'], ['fonts', 'Fonts'], ['stickers', 'Stickers'],
   ['words', 'Quotes & header'], ['layout', 'Layout'], ['paper', 'Paper'], ['share', 'Share & reset'], ['planner', 'Planner setup'],
 ];
 const WORDMARKS = [
@@ -260,7 +261,7 @@ function panelPlanner(ctx) {
     <h3 class="panel-sub">Put it on your iPhone</h3>
     <p class="muted">Open this page in Safari → Share → <b>Add to Home Screen</b>. It opens full-screen and works offline.</p>`;
 }
-const RENDER = { looks: panelLooks, themes: panelThemes, colors: panelColors, fonts: panelFonts, stickers: panelStickers, words: panelWords, layout: panelLayout, paper: panelPaper, share: panelShare, planner: panelPlanner };
+const RENDER = { account: panelAccount, looks: panelLooks, themes: panelThemes, colors: panelColors, fonts: panelFonts, stickers: panelStickers, words: panelWords, layout: panelLayout, paper: panelPaper, share: panelShare, planner: panelPlanner };
 
 // ---------- helpers ----------
 function download(name, text, type = 'application/json') {

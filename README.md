@@ -50,3 +50,15 @@ Studio (default), Minimal Mono, Editorial Serif, and Sweet bundle theme + fonts 
 `paper{texture,stock,desk,hasImage,imageDim}`, `stickers{showInMonth,packs,recent}`. The background photo is stored under its own key
 (`jb-planner:bg-image`) so it isn't re-saved on every keystroke. A style file (`type: "jb-planner-style"`) holds all of this and can
 optionally include the photo. Stickers are saved on the data itself: `day.stickers[]`, `section.sticker`, `item.sticker`.
+
+
+## Cloud sync (Supabase)
+Optional sign-in via email magic link. Local data keeps working offline; signing in merges and syncs across devices (Realtime + last-write-wins per day).
+
+- Public config: `js/config.js` (URL + anon key only)
+- Secrets (never commit): `/workspace/planner-secrets/supabase.env`
+- Provision: `SUPABASE_ACCESS_TOKEN=… ./scripts/provision-supabase.sh`
+- Unit tests: `node scripts/test-sync-merge.mjs`
+- Live tests (after provision): `node scripts/test-sync-live.mjs`
+
+Calendar: Style → Account (or Export → Subscribe) for a private `webcal://` feed served by the `ics` Edge Function.
