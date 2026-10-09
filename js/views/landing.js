@@ -123,6 +123,99 @@ function authPanelHTML(ctx) {
   </div>`;
 }
 
+
+function detectInstallPlatform() {
+  const ua = navigator.userAgent || '';
+  const isIos = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (isIos) return 'ios';
+  if (/Android/i.test(ua)) return 'android';
+  if (/Windows/i.test(ua)) return 'windows';
+  if (/Mac OS X|Macintosh/i.test(ua)) return 'mac';
+  return 'windows';
+}
+
+function installStep(n, title, body) {
+  return `<li class="lp-install-step">
+    <span class="lp-step-num" aria-hidden="true">${n}</span>
+    <div><b>${title}</b><p>${body}</p></div>
+  </li>`;
+}
+
+function installGuideHTML(active = 'ios') {
+  const tabs = [
+    ['ios', 'iPhone'],
+    ['android', 'Android'],
+    ['windows', 'Windows'],
+    ['mac', 'Mac'],
+  ];
+  const panels = {
+    ios: `
+      <div class="lp-install-visual" aria-hidden="true">
+        <div class="lp-mock-phone"><span class="lp-mock-share" title="Share">⬆</span><span class="lp-mock-label">Share</span></div>
+      </div>
+      <ol class="lp-install-steps">
+        ${installStep(1, 'Open in Safari', 'Go to <b>mom-os.github.io</b> in <b>Safari</b> (Chrome on iPhone won’t offer Add to Home Screen the same way).')}
+        ${installStep(2, 'Tap Share', 'The square with the ↑ arrow at the bottom of Safari.')}
+        ${installStep(3, 'Add to Home Screen', 'Scroll the sheet if needed → <b>Add to Home Screen</b> → <b>Add</b>.')}
+      </ol>
+      <p class="lp-install-note muted">You’ll get the black <b>M</b> icon on your home screen — tap it anytime, full-screen, like a real app.</p>`,
+    android: `
+      <div class="lp-install-visual" aria-hidden="true">
+        <div class="lp-mock-phone android"><span class="lp-mock-menu">⋮</span><span class="lp-mock-label">Install</span></div>
+      </div>
+      <ol class="lp-install-steps">
+        ${installStep(1, 'Open in Chrome', 'Visit <b>mom-os.github.io</b> in Chrome.')}
+        ${installStep(2, 'Tap the menu', 'The <b>⋮</b> three-dot menu (top right).')}
+        ${installStep(3, 'Add / Install', 'Choose <b>Add to Home screen</b> or <b>Install app</b>, then confirm.')}
+      </ol>
+      <p class="lp-install-note muted">Offline days still work; sync catches up when you’re back online.</p>`,
+    windows: `
+      <div class="lp-install-visual" aria-hidden="true">
+        <div class="lp-mock-desk"><span class="lp-mock-omnibox">⊕ Install</span></div>
+      </div>
+      <ol class="lp-install-steps">
+        ${installStep(1, 'Open in Chrome or Edge', 'Go to <b>mom-os.github.io</b>.')}
+        ${installStep(2, 'Install icon', 'Click the <b>install</b> icon in the address bar — or open the browser menu → <b>Install Mom.OS</b> / <b>Apps</b> → <b>Install this site as an app</b>.')}
+        ${installStep(3, 'Pin it', 'Launch from the Start menu or taskbar like any other app.')}
+      </ol>
+      <p class="lp-install-note muted">Works offline on your PC. When you’re online and signed in, edits sync to your phone.</p>`,
+    mac: `
+      <div class="lp-install-visual" aria-hidden="true">
+        <div class="lp-mock-desk mac"><span class="lp-mock-omnibox">↓ Dock</span></div>
+      </div>
+      <ol class="lp-install-steps">
+        ${installStep(1, 'Chrome', 'Open <b>mom-os.github.io</b> → click the <b>install</b> icon in the address bar → Install.')}
+        ${installStep(2, 'Safari', 'Open the site in Safari → menu <b>File</b> → <b>Add to Dock</b> (macOS Sonoma+).')}
+        ${installStep(3, 'Open from Dock', 'Launch Mom.OS from your Dock anytime — same planner, less browser clutter.')}
+      </ol>
+      <p class="lp-install-note muted">Signed in = same days on Mac and phone. Offline still works at the kitchen table.</p>`,
+  };
+  const tabBtns = tabs.map(([id, label]) =>
+    `<button type="button" class="lp-install-tab ${id === active ? 'on' : ''}" data-lp-install-tab="${id}" aria-selected="${id === active}">${label}</button>`
+  ).join('');
+  const panelHtml = tabs.map(([id]) =>
+    `<div class="lp-install-panel ${id === active ? 'on' : ''}" data-lp-install-panel="${id}" ${id === active ? '' : 'hidden'}>${panels[id]}</div>`
+  ).join('');
+  return `
+  <section class="lp-section lp-tint-teal" id="install">
+    <div class="lp-section-head">
+      <h2>Get the app</h2>
+      <p class="muted">Put Mom.OS on your phone &amp; computer — no app store needed.</p>
+    </div>
+    <div class="lp-install-pwa" hidden>
+      <button type="button" class="btn primary large" data-lp="pwa-install">Install Mom.OS</button>
+      <p class="muted small">One tap — your browser can install it right now.</p>
+    </div>
+    <div class="lp-install-tabs" role="tablist" aria-label="Choose your device">${tabBtns}</div>
+    <div class="lp-install-body">${panelHtml}</div>
+    <div class="lp-install-sync">
+      <b>Then sign in on the new device</b>
+      <p class="muted">Already signed in somewhere else? Open <b>Style → Account → Link another device</b>, grab the short code, and enter it here (or on the new phone). No need to dig through email again.</p>
+    </div>
+  </section>`;
+}
+
+
 export function renderLanding(view, ctx) {
   document.body.classList.add('landing-mode');
   const configured = isSupabaseConfigured();
@@ -136,6 +229,7 @@ export function renderLanding(view, ctx) {
       </a>
       <nav class="lp-nav">
         <button type="button" class="lp-nav-link" data-lp-scroll="features">Features</button>
+        <button type="button" class="lp-nav-link" data-lp-scroll="install">Install</button>
         <button type="button" class="lp-nav-link" data-lp-scroll="pricing">Pricing</button>
         <button type="button" class="lp-nav-link" data-lp-scroll="faq">FAQ</button>
         <button type="button" class="btn small ghost" data-lp="signin">Sign in</button>
@@ -159,7 +253,8 @@ export function renderLanding(view, ctx) {
           <button type="button" class="btn large" data-lp="signin">Sign in</button>
           <button type="button" class="btn ghost large" data-lp="enter">Open my planner</button>
         </div>
-        <p class="lp-micro muted">Core day stays free. Pro adds Looks, full sticker packs, Weekend Reset &amp; Sunday plan.</p>
+        <p class="lp-micro muted">Core day stays free. Pro adds Looks, full sticker packs, Weekend Reset &amp; Sunday plan.
+          <button type="button" class="linkish" data-lp-scroll="install">How to get the app →</button></p>
       </div>
       <div class="lp-hero-visual" aria-hidden="true">
         <div class="lp-device desk">
@@ -267,8 +362,10 @@ export function renderLanding(view, ctx) {
     <section class="lp-section" id="faq">
       <h2>FAQ</h2>
       <div class="lp-faq">
-        <details open><summary>Does it work on iPhone?</summary>
-          <p>Yes. Open in Safari → Share → <b>Add to Home Screen</b> for the full-screen app. Sign in once (or link from a computer with a device code).</p></details>
+        <details open><summary>How do I get the app on my phone or computer?</summary>
+          <p>No App Store needed — install from the browser. Jump to <button type="button" class="linkish" data-lp-scroll="install">Get the app</button> for iPhone, Android, Windows, and Mac steps. Then sign in or use <b>Link another device</b>.</p></details>
+        <details><summary>Does it work on iPhone?</summary>
+          <p>Yes. Open in <b>Safari</b> → Share → <b>Add to Home Screen</b> for the full-screen app. Sign in once (or link from a computer with a device code). Details in <button type="button" class="linkish" data-lp-scroll="install">Get the app</button>.</p></details>
         <details><summary>Does it work offline?</summary>
           <p>Yes. Your day stays on the device. When you’re online and signed in, edits sync across phones and PCs.</p></details>
         <details><summary>Can I put tasks on my calendar?</summary>
@@ -321,10 +418,32 @@ function bindLanding(view, ctx) {
       view.querySelector('#' + id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
+    const tab = e.target.closest('[data-lp-install-tab]');
+    if (tab) {
+      const id = tab.dataset.lpInstallTab;
+      view.querySelectorAll('.lp-install-tab').forEach((b) => {
+        const on = b.dataset.lpInstallTab === id;
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      view.querySelectorAll('.lp-install-panel').forEach((panel) => {
+        const on = panel.dataset.lpInstallPanel === id;
+        panel.classList.toggle('on', on);
+        panel.hidden = !on;
+      });
+      return;
+    }
     const el = e.target.closest('[data-lp]');
     if (!el) return;
     const act = el.dataset.lp;
 
+    if (act === 'pwa-install') {
+      const deferred = ctx._pwaDeferred;
+      if (!deferred) { ctx.toast('Use the steps below for your device'); return; }
+      deferred.prompt();
+      deferred.userChoice.finally(() => { ctx._pwaDeferred = null; view.querySelector('.lp-install-pwa')?.setAttribute('hidden', ''); });
+      return;
+    }
     if (act === 'enter') return enterPlanner(ctx);
     if (act === 'start') {
       ctx.landingIntent = 'start';
@@ -455,6 +574,19 @@ function bindLanding(view, ctx) {
     }
   });
 
+  // Native install prompt when the browser offers it
+  const showPwa = () => {
+    const box = view.querySelector('.lp-install-pwa');
+    if (box && ctx._pwaDeferred) box.hidden = false;
+  };
+  if (ctx._pwaDeferred) showPwa();
+  const onBip = (e) => {
+    e.preventDefault();
+    ctx._pwaDeferred = e;
+    showPwa();
+  };
+  window.addEventListener('beforeinstallprompt', onBip);
+  // tidy if view is replaced (clone drops this listener with the node; window listener is ok to stack lightly)
   view.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
     if (e.target.classList.contains('lp-email')) {

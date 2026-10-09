@@ -1662,3 +1662,91 @@ body.landing-mode {
   .lp-fun .lp-mark { white-space: normal; }
   .lp-day-strip li { grid-template-columns: 3.6rem 1fr; font-size: .88rem; }
 }
+
+
+/* ---- Landing: Get the app / install guide ---- */
+.lp-install-tabs {
+  display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 1rem;
+}
+.lp-install-tab {
+  border: 1px solid color-mix(in srgb, var(--lp-teal) 25%, var(--grid));
+  background: color-mix(in srgb, #fff 70%, var(--lp-cream));
+  color: var(--lp-ink); font: inherit; font-weight: 650; font-size: .88rem;
+  padding: .45rem .9rem; border-radius: 999px; cursor: pointer;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.lp-install-tab:hover { transform: translateY(-1px); border-color: var(--lp-teal); }
+.lp-install-tab.on {
+  background: var(--lp-teal); color: #fbfaf8; border-color: var(--lp-teal);
+}
+.lp-install-body {
+  background: color-mix(in srgb, #fff 75%, var(--page));
+  border: 1px solid color-mix(in srgb, var(--lp-teal) 14%, var(--grid));
+  border-radius: 20px; padding: 1.1rem 1.15rem 1.2rem;
+  box-shadow: 0 10px 28px rgba(44, 36, 32, .06);
+}
+.lp-install-panel {
+  display: grid; grid-template-columns: auto 1fr; gap: 1.1rem 1.4rem; align-items: start;
+}
+.lp-install-panel[hidden] { display: none !important; }
+.lp-install-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .7rem; }
+.lp-install-step { display: grid; grid-template-columns: 2rem 1fr; gap: .65rem; align-items: start; }
+.lp-step-num {
+  width: 2rem; height: 2rem; border-radius: 999px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--lp-blush-deep) 45%, #fff);
+  color: var(--lp-ink); font-weight: 750; font-size: .85rem;
+}
+.lp-install-step b { display: block; margin-bottom: .15rem; font-size: .95rem; }
+.lp-install-step p { margin: 0; font-size: .88rem; color: var(--ink-soft); line-height: 1.4; }
+.lp-install-note { margin: .85rem 0 0; font-size: .84rem; }
+.lp-install-sync {
+  margin-top: 1rem; padding: .9rem 1.05rem; border-radius: 16px;
+  background: color-mix(in srgb, var(--lp-blush) 40%, #fff);
+  border: 1px dashed color-mix(in srgb, var(--lp-blush-deep) 40%, var(--grid));
+}
+.lp-install-sync b { display: block; margin-bottom: .25rem; }
+.lp-install-sync p { margin: 0; font-size: .9rem; line-height: 1.4; }
+.lp-install-pwa {
+  margin: 0 0 1rem; padding: .85rem 1rem; border-radius: 16px;
+  background: color-mix(in srgb, var(--lp-teal-soft) 70%, #fff);
+  border: 1px solid color-mix(in srgb, var(--lp-teal) 30%, var(--grid));
+  display: flex; flex-wrap: wrap; gap: .55rem 1rem; align-items: center;
+}
+.lp-install-pwa[hidden] { display: none !important; }
+.lp-install-pwa .muted { margin: 0; }
+
+.lp-mock-phone, .lp-mock-desk {
+  width: 7.5rem; height: 10.5rem; border-radius: 1.35rem;
+  background: linear-gradient(160deg, #2c2a28, #3d6b6e 120%);
+  color: #fbfaf8; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .35rem; box-shadow: 0 12px 28px rgba(44,36,32,.18);
+  position: relative;
+}
+.lp-mock-phone::before {
+  content: ''; width: 2.5rem; height: .28rem; border-radius: 999px; background: rgba(255,255,255,.25);
+  position: absolute; top: .55rem;
+}
+.lp-mock-phone.android { border-radius: 1.1rem; background: linear-gradient(160deg, #1e2a2b, #3d6b6e); }
+.lp-mock-desk {
+  width: 10.5rem; height: 7rem; border-radius: 12px;
+  background: linear-gradient(160deg, #f3f1ee, #d5e6e5);
+  color: var(--lp-ink); border: 1px solid color-mix(in srgb, var(--lp-teal) 20%, #ccc);
+}
+.lp-mock-desk.mac { background: linear-gradient(160deg, #fbfaf8, #f3d4d8); }
+.lp-mock-share, .lp-mock-menu {
+  width: 2.4rem; height: 2.4rem; border-radius: 999px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--lp-blush-deep) 55%, #fff); color: var(--lp-ink);
+  font-size: 1.1rem; font-weight: 700;
+}
+.lp-mock-menu { background: rgba(255,255,255,.2); color: #fff; font-size: 1.4rem; }
+.lp-mock-label { font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .9; }
+.lp-mock-omnibox {
+  font-size: .8rem; font-weight: 700; padding: .45rem .75rem; border-radius: 999px;
+  background: var(--lp-teal); color: #fbfaf8;
+}
+.lp-micro .linkish { margin-left: .35rem; }
+
+@media (max-width: 720px) {
+  .lp-install-panel { grid-template-columns: 1fr; }
+  .lp-install-visual { display: flex; justify-content: center; }
+}

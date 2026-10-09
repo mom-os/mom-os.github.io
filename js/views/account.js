@@ -9,7 +9,7 @@ import { renderSVG } from '../vendor/uqr.js';
 import { planLabel, isOwner, planTierKey, PRICE_MO, PRICE_YR, openProSheet, isProUnlocked, openBillingPortal } from '../plan.js';
 import { STRIPE_TEST_MODE } from '../config.js';
 
-const BUILD_TAG = '0.6.3';
+const BUILD_TAG = '0.6.4';
 
 const statusLabel = {
   [SyncStatus.Off]: 'Cloud off',
