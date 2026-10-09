@@ -3,6 +3,7 @@
  * When signed in, we push/pull with LWW per document and subscribe to Realtime.
  */
 import { getSupabase, getSession, onAuthChange } from './client.js';
+import { applySubscriptionRow } from '../plan.js';
 import { isSupabaseConfigured, SUPABASE_URL } from '../config.js';
 import { mergeDayMaps, mergeDoc, mergeMonthNotes, newer, snapshotForSync } from './merge.js';
 
@@ -89,16 +90,21 @@ export class SyncEngine {
     this._pulling = true;
     try {
       const uid = this.user.id;
-      const [daysRes, settingsRes, templatesRes, notesRes] = await Promise.all([
+      const [daysRes, settingsRes, templatesRes, notesRes, subRes] = await Promise.all([
         sb.from('days').select('day_date, doc, updated_at').eq('user_id', uid),
         sb.from('user_settings').select('doc, updated_at').eq('user_id', uid).maybeSingle(),
         sb.from('templates').select('doc, updated_at').eq('user_id', uid).maybeSingle(),
         sb.from('month_notes').select('month_key, doc, updated_at').eq('user_id', uid),
+        sb.from('subscriptions').select('*').eq('user_id', uid).maybeSingle(),
       ]);
       if (daysRes.error) throw daysRes.error;
       if (settingsRes.error) throw settingsRes.error;
       if (templatesRes.error) throw templatesRes.error;
       if (notesRes.error) throw notesRes.error;
+      // subscriptions select may 404 if migration lag — ignore soft errors
+      if (subRes.error && subRes.error.code !== 'PGRST116') {
+        console.warn('subscriptions pull', subRes.error.message);
+      }
 
       const remoteDays = {};
       for (const row of daysRes.data || []) {
@@ -118,8 +124,6 @@ export class SyncEngine {
             style: remote.style ?? settings.style,
             showAnchors: remote.showAnchors ?? settings.showAnchors,
             anchors: remote.anchors ?? settings.anchors,
-            plan: remote.plan ?? settings.plan ?? 'free',
-            foundingMom: remote.foundingMom ?? settings.foundingMom ?? false,
             foundingInterest: remote.foundingInterest ?? settings.foundingInterest ?? false,
             retention: { ...(settings.retention || {}), ...(remote.retention || {}) },
             updatedAt: remote.updatedAt,
@@ -154,6 +158,9 @@ export class SyncEngine {
         this.store.state.meta.monthNotesUpdatedAt[k] = v.updatedAt || null;
       }
 
+      // Entitlement: server subscriptions table wins (clients cannot self-grant Pro)
+      applySubscriptionRow(settings, subRes?.data || null);
+
       this._applyingRemote = true;
       this.store.state.days = days;
       this.store.state.settings = settings;
@@ -186,9 +193,17 @@ export class SyncEngine {
     }
 
     if (snap.settings.updatedAt || snap.settings.style) {
+      const doc = { ...snap.settings };
+      delete doc.plan;
+      delete doc.foundingMom;
+      delete doc.foundingExpiresAt;
+      delete doc.stripeCustomerId;
+      delete doc.stripeSubscriptionId;
+      delete doc.subscriptionStatus;
+      delete doc.currentPeriodEnd;
       const { error } = await sb.from('user_settings').upsert({
         user_id: uid,
-        doc: snap.settings,
+        doc,
         updated_at: snap.settings.updatedAt || new Date().toISOString(),
       });
       if (error) throw error;
@@ -225,6 +240,7 @@ export class SyncEngine {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_settings', filter: `user_id=eq.${uid}` }, () => this.softPull())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'templates', filter: `user_id=eq.${uid}` }, () => this.softPull())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'month_notes', filter: `user_id=eq.${uid}` }, () => this.softPull())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions', filter: `user_id=eq.${uid}` }, () => this.softPull())
       .subscribe();
   }
 

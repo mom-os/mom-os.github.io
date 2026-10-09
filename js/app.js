@@ -37,6 +37,41 @@ const ctx = {
   loadSample() { seedSample(store); toast('Sample days added (Oct 8 & Oct 10, 2026)'); },
 };
 
+
+async function handleCheckoutReturn() {
+  const q = new URLSearchParams(location.search);
+  const flag = q.get('checkout');
+  if (!flag) return;
+  // Clean query from URL without reload
+  try {
+    const url = new URL(location.href);
+    url.searchParams.delete('checkout');
+    url.searchParams.delete('session_id');
+    history.replaceState({}, '', url.pathname + url.search + (location.hash || ''));
+  } catch {}
+  if (flag === 'cancel') {
+    toast('Checkout canceled — no charge');
+    return;
+  }
+  if (flag === 'success') {
+    toast('Welcome to Pro — unlocking…');
+    try { await ctx.sync?.pullRemote?.(); } catch {}
+    // brief poll in case webhook lags
+    for (let i = 0; i < 8; i++) {
+      await new Promise((r) => setTimeout(r, 700));
+      try { await ctx.sync?.pullRemote?.(); } catch {}
+      if ((store.settings.plan || 'free') === 'pro') break;
+    }
+    if ((store.settings.plan || 'free') === 'pro') {
+      toast('Welcome to Pro — you’re unlocked');
+    } else {
+      toast('Payment received — Pro unlocks in a few seconds. Refresh if needed.');
+    }
+    ctx.rerender();
+    ctx.go('#/style/account');
+  }
+}
+
 function renderSyncChip() {
   const brand = document.querySelector('.brand');
   if (!brand) return;
@@ -146,6 +181,7 @@ async function boot() {
   render();
   renderSyncChip();
   startAlarmClock(store, { toast });
+  try { await handleCheckoutReturn(); } catch (e) { console.warn('checkout return', e); }
   if (recovered.fromUrl && recovered.session) {
     ctx.toast('Signed in — syncing…');
     if (!location.hash.startsWith('#/')) ctx.go('#/myday');

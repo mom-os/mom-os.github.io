@@ -4,3 +4,5 @@ supabase/.temp/
 supabase/.branches/
 .env
 .env.*
+# never commit stripe secrets
+**/stripe.env

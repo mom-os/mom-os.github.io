@@ -34,6 +34,7 @@ export function defaultState() {
       plan: 'free',                   // free | pro (Stripe later); owner email always unlocked
       foundingMom: false,
       foundingInterest: false,
+      foundingExpiresAt: null,
       retention: {
         streakCount: 0,
         streakLastDay: null,

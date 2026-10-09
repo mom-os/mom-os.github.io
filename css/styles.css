@@ -1309,3 +1309,10 @@ input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 .plan-row .muted.small { display: block; margin-top: .2rem; max-width: 28rem; }
 .plan-badge.pro, .plan-badge.founding { background: color-mix(in srgb, var(--accent) 20%, var(--page)); color: var(--ink); }
 .sheet .pro-sheet { padding-bottom: .5rem; }
+
+.pro-test-badge {
+  margin: 0 0 .65rem; padding: .4rem .6rem; border-radius: 10px;
+  font-size: .78rem; font-weight: 600; color: var(--ink);
+  background: color-mix(in srgb, #e8c96a 35%, var(--page));
+  border: 1px solid color-mix(in srgb, #c4a484 45%, var(--grid));
+}

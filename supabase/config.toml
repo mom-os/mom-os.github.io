@@ -419,3 +419,12 @@ verify_jwt = false
 
 [functions.pair]
 verify_jwt = false
+
+[functions.checkout]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.portal]
+verify_jwt = false

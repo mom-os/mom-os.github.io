@@ -6,9 +6,10 @@ import {
 } from '../sync/client.js';
 import { SyncStatus } from '../sync/engine.js';
 import { renderSVG } from '../vendor/uqr.js';
-import { planLabel, isOwner, planTierKey, PRICE_MO, PRICE_YR, openProSheet, isProUnlocked } from '../plan.js';
+import { planLabel, isOwner, planTierKey, PRICE_MO, PRICE_YR, openProSheet, isProUnlocked, openBillingPortal } from '../plan.js';
+import { STRIPE_TEST_MODE } from '../config.js';
 
-const BUILD_TAG = '0.5.9';
+const BUILD_TAG = '0.6.0';
 
 const statusLabel = {
   [SyncStatus.Off]: 'Cloud off',
@@ -172,8 +173,12 @@ export function panelAccount(ctx) {
     ${(() => {
       const tier = planTierKey(ctx);
       if (tier === 'founder') return `<p class="plan-row"><span class="plan-badge founder">Founder · free forever</span><span class="muted small">Owner account — Pro unlocked on every device you sign into.</span></p>`;
-      if (tier === 'founding') return `<p class="plan-row"><span class="plan-badge founding">Founding mom</span><span class="muted small">Pro · thanks for believing early.</span></p>`;
-      if (tier === 'pro') return `<p class="plan-row"><span class="plan-badge pro">Pro</span><span class="muted small">${PRICE_MO} or ${PRICE_YR}</span></p>`;
+      if (tier === 'founding') return `<div class="plan-row"><div><span class="plan-badge founding">Founding mom</span>
+        <span class="muted small">Pro · thanks for believing early.${STRIPE_TEST_MODE ? ' · Test mode' : ''}</span></div>
+        <button class="btn small ghost" data-a="acct-portal">Manage</button></div>`;
+      if (tier === 'pro') return `<div class="plan-row"><div><span class="plan-badge pro">Pro</span>
+        <span class="muted small">${PRICE_MO} or ${PRICE_YR}${STRIPE_TEST_MODE ? ' · Test mode' : ''}</span></div>
+        <button class="btn small ghost" data-a="acct-portal">Manage subscription</button></div>`;
       return `<div class="plan-row free-plan"><div><span class="plan-badge">Free</span>
         <p class="muted small">Core planner, lists, End of Day, Studio Look, teaser stickers. Pro adds Looks, full packs, Weekend Reset &amp; Sunday plan — ${PRICE_MO} or ${PRICE_YR}.</p></div>
         <button class="btn small primary" data-a="acct-pro">See Pro</button></div>`;
@@ -342,6 +347,8 @@ export function bindAccountActions(view, ctx) {
         ctx.rerender();
       } else if (a === 'acct-pro') {
         openProSheet(btn, ctx, { reason: 'Mom.OS Pro' });
+      } else if (a === 'acct-portal') {
+        openBillingPortal(ctx);
       } else if (a === 'acct-signout') {
         await signOut();
         ctx.accountPendingEmail = '';
