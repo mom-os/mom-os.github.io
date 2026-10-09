@@ -310,6 +310,8 @@ export function renderLanding(view, ctx) {
       </ul>
     </section>
 
+    ${installGuideHTML(detectInstallPlatform())}
+
     <section class="lp-section lp-tint-cream" id="founder">
       <div class="lp-founder">
         ${decoSticker('camera', 'founder-stk')}
