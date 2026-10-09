@@ -3,6 +3,7 @@
  * Shown at #/ (and #/home) when the visitor is signed out and hasn't entered the app yet.
  */
 import { esc } from '../util.js';
+import { stickerHTML } from '../style/stickers.js';
 import { icon } from '../ui.js';
 import { isSupabaseConfigured, SITE_URL } from '../config.js';
 import { PRICE_MO, PRICE_YR, PRICE_FOUNDING, openProSheet } from '../plan.js';
@@ -51,6 +52,24 @@ function friendlyAuthError(err) {
   return err?.message || 'Something went wrong — try again.';
 }
 
+
+function decoSticker(id, cls = '') {
+  return stickerHTML('p:' + id, `lp-stk ${cls}`);
+}
+
+function realMomDayHTML() {
+  const rows = [
+    ['7:15a', 'School drop-off (shoes… where are the shoes?)', 'blush'],
+    ['10:00a', 'Client call — gallery proofing', 'teal'],
+    ['12:30p', 'Lunch + list five resale items', 'butter'],
+    ['5:30p', 'Sheet-pan fajitas (yes, again — they work)', 'peach'],
+    ['7:30p', 'Bath & bedtime → then your own quiet', 'lavender'],
+  ];
+  return `<ol class="lp-day-strip">
+    ${rows.map(([time, text, c]) => `<li class="c-${c}"><time>${esc(time)}</time><span>${esc(text)}</span></li>`).join('')}
+  </ol>`;
+}
+
 function featCard(img, title, body) {
   return `<article class="lp-feat">
     <div class="lp-feat-media">${img ? `<img src="${esc(img)}" alt="" loading="lazy" decoding="async">` : ''}</div>
@@ -92,8 +111,8 @@ function authPanelHTML(ctx) {
     </div>`;
   }
   return `<div class="lp-auth-card" id="lp-auth">
-    <h3>Start free — or sign in</h3>
-    <p class="muted">We’ll email a 6-digit code (and a link for desktop). No password.</p>
+    <h3>Let’s get your day loaded</h3>
+    <p class="muted">Email a 6-digit code (plus a desktop link). No password, no fuss.</p>
     <label class="field"><span>Email</span>
       <input class="lp-email" type="email" autocomplete="email" placeholder="you@example.com" enterkeyhint="send" value="${esc(ctx.landingDraftEmail || '')}"></label>
     <div class="lp-auth-actions">
@@ -109,7 +128,7 @@ export function renderLanding(view, ctx) {
   const configured = isSupabaseConfigured();
 
   view.innerHTML = `
-  <div class="lp">
+  <div class="lp lp-fun">
     <header class="lp-top">
       <a class="lp-brand" href="#/" aria-label="Mom.OS home">
         <span class="brand-mark" aria-hidden="true"></span>
@@ -125,16 +144,22 @@ export function renderLanding(view, ctx) {
     </header>
 
     <section class="lp-hero">
+      <div class="lp-float-stks" aria-hidden="true">
+        ${decoSticker('coffee', 's1')}
+        ${decoSticker('plantLeaf', 's2')}
+        ${decoSticker('witchMoon', 's3')}
+        ${decoSticker('bizLaptop', 's4')}
+      </div>
       <div class="lp-hero-copy">
-        <p class="lp-kicker">For ADHD moms · military spouses · work + hustle</p>
-        <h1>The planner that thinks like a mom brain — and keeps up with it.</h1>
-        <p class="lp-lead">Mom.OS is a calm desk planner on your phone and computer: today’s issues, meals, timed tasks with gentle reminders, lists, and an end-of-day wrap — without the guilt apps.</p>
+        <p class="lp-kicker">ADHD moms · military spouses · work + side hustle</p>
+        <h1>For the mom running the house, the business, and <span class="lp-mark">47 browser tabs</span> in her brain.</h1>
+        <p class="lp-lead">Mom.OS is your desk planner that actually fits a real day — meals, drop-offs, client calls, and the tiny wins — on phone and PC, without the guilt apps.</p>
         <div class="lp-hero-cta">
           <button type="button" class="btn primary large" data-lp="start">Start free</button>
           <button type="button" class="btn large" data-lp="signin">Sign in</button>
           <button type="button" class="btn ghost large" data-lp="enter">Open my planner</button>
         </div>
-        <p class="lp-micro muted">Free forever for the core day. Pro unlocks Looks, full sticker packs, Weekend Reset &amp; Sunday plan.</p>
+        <p class="lp-micro muted">Core day stays free. Pro adds Looks, full sticker packs, Weekend Reset &amp; Sunday plan.</p>
       </div>
       <div class="lp-hero-visual" aria-hidden="true">
         <div class="lp-device desk">
@@ -143,6 +168,7 @@ export function renderLanding(view, ctx) {
         <div class="lp-device phone">
           <img src="assets/landing/feat-phone.png" alt="" loading="eager" decoding="async">
         </div>
+        ${decoSticker('star', 's5')}
       </div>
     </section>
 
@@ -150,36 +176,61 @@ export function renderLanding(view, ctx) {
       ${authPanelHTML(ctx)}
     </section>
 
-    <section class="lp-section" id="about">
-      <h2>What it is</h2>
-      <p class="lp-prose">Mom.OS feels like a paper desk planner — sections for <b>Today’s Issues</b>, <b>What Are We Eating</b>, and <b>Important Things To Do</b> — with a phone-first <b>My Day</b> timeline so the next thing is obvious. Same data on iPhone and PC when you sign in. Works offline; syncs when you’re back.</p>
+    <section class="lp-section lp-tint-teal" id="about">
+      <h2>What it is <span class="lp-stk-inline" aria-hidden="true">${decoSticker('heart')}</span></h2>
+      <p class="lp-prose">Paper-planner energy, phone-speed reality. <b>Today’s Issues</b>, <b>What Are We Eating</b>, <b>Important Things To Do</b> — plus a <b>My Day</b> timeline so “what’s next?” isn’t a scavenger hunt. Same stuff on iPhone and PC when you sign in. Works offline; syncs when you’re back.</p>
+    </section>
+
+    <section class="lp-section lp-tint-blush" id="realday">
+      <div class="lp-section-head">
+        <h2>A real mom day</h2>
+        <p class="muted">Not a productivity fantasy — the messy middle, timed gently.</p>
+      </div>
+      ${realMomDayHTML()}
     </section>
 
     <section class="lp-section" id="features">
-      <h2>What you get</h2>
+      <div class="lp-section-head">
+        <h2>What you actually get</h2>
+        <p class="muted">The tools that keep the day from becoming seventeen sticky notes.</p>
+      </div>
       <div class="lp-feat-grid">
-        ${featCard('assets/landing/feat-day.png', 'Desk-style day pages', 'Today’s Issues, meals, and timed Important Things — color sections that stay readable.')}
-        ${featCard('assets/landing/feat-myday.png', 'My Day + Top 3', 'A phone timeline with a gentle Top 3 focus strip so you’re not staring at an empty screen.')}
-        ${featCard('assets/landing/feat-weekend.png', 'Lists & Weekend Reset', 'Grocery peeks, laundry, meal sketch — light checklists when the weekend hits.')}
-        ${featCard('assets/landing/feat-eod.png', 'End of Day', 'A calm wrap: what went well, what carries over — no scorekeeping.')}
-        ${featCard('assets/landing/feat-looks.png', 'Looks & sticker packs', 'Studio Look is free. Pro unlocks more Looks and full lifestyle sticker packs.')}
-        ${featCard('assets/landing/feat-phone.png', 'Phone, PC & calendar', 'Sign in once. Link another device with a short code. Optional iCloud / Outlook feed with alarms.')}
+        ${featCard('assets/landing/feat-day.png', 'Desk-style day pages', 'Issues, dinner plans, timed to-dos — color blocks you can actually scan while someone’s yelling “MOM.”')}
+        ${featCard('assets/landing/feat-myday.png', 'My Day + Top 3', 'Phone timeline + a Top 3 focus strip. Empty-screen freeze? We’ve got a gentle on-ramp.')}
+        ${featCard('assets/landing/feat-weekend.png', 'Lists & Weekend Reset', 'Grocery peek, laundry, meal sketch — light checklists for the days that sprawl (Pro for Reset).')}
+        ${featCard('assets/landing/feat-eod.png', 'End of Day', 'What went well, what carries over. Zero scorekeeping. Permission to close the laptop.')}
+        ${featCard('assets/landing/feat-looks.png', 'Looks & stickers', 'Studio Look is free and grown-up. Pro unlocks more Looks and full packs — plant, witchy, hustle, the works.')}
+        ${featCard('assets/landing/feat-phone.png', 'Phone, PC & calendar', 'Sign in once. Link another device with a short code. Optional iCloud / Outlook feed when you want lock-screen nudges.')}
       </div>
     </section>
 
     <section class="lp-section lp-helps" id="helps">
-      <h2>How it helps</h2>
+      <h2>How it helps a busy brain</h2>
       <ul class="lp-points">
-        <li><b>Fewer empty screens</b> — Top 3 and quick-add get you moving without a blank page stare-down.</li>
-        <li><b>Gentle streaks</b> — “3-day rhythm,” never fire-and-shame. Miss a day? Start fresh.</li>
-        <li><b>Weekend Reset</b> — a light Saturday/Sunday checklist (Pro) so the chaos has a landing pad.</li>
-        <li><b>Sunday plan prompt</b> — two minutes to skim next week (Pro), dismissible, no lecture.</li>
-        <li><b>Alarms that respect you</b> — reminders on timed lines; calendar feed for lock-screen when you subscribe.</li>
+        <li><b>Fewer empty screens</b> — Top 3 and quick-add beat the blank-page stare.</li>
+        <li><b>Gentle streaks</b> — “3-day rhythm,” never fire-and-shame. Missed a day? Start fresh.</li>
+        <li><b>Weekend Reset</b> — a soft Sat/Sun checklist (Pro) so chaos has a landing pad.</li>
+        <li><b>Sunday plan prompt</b> — two minutes for next week (Pro). Dismissible. No lecture.</li>
+        <li><b>Alarms that respect you</b> — reminders on timed lines; calendar feed when you want them louder.</li>
       </ul>
     </section>
 
+    <section class="lp-section lp-tint-cream" id="founder">
+      <div class="lp-founder">
+        ${decoSticker('camera', 'founder-stk')}
+        <div>
+          <p class="lp-kicker">Built by a mom with ADHD</p>
+          <h2>From one juggling act to another</h2>
+          <p class="lp-prose">Hi — I’m Jordan. Mom of two, graphic designer, photographer, and reseller who got tired of planners that assumed I had a quiet desk and a free hour. Mom.OS is the desk planner I wanted: warm enough to enjoy, sturdy enough for drop-offs, client calls, and the seventeen tabs still open in my brain. Edit this note anytime — it’s your story too.</p>
+        </div>
+      </div>
+    </section>
+
     <section class="lp-section" id="pricing">
-      <h2>Pricing</h2>
+      <div class="lp-section-head">
+        <h2>Pricing that doesn’t guilt you</h2>
+        <p class="muted">Start free. Upgrade when the extras earn their keep.</p>
+      </div>
       <div class="lp-price-grid">
         <div class="lp-price-card">
           <p class="lp-price-label">Free</p>
@@ -225,7 +276,7 @@ export function renderLanding(view, ctx) {
         <details><summary>Can I cancel Pro anytime?</summary>
           <p>Yes. Manage or cancel from Account → Manage subscription. Free core stays available.</p></details>
         <details><summary>Is this childish sticker chaos?</summary>
-          <p>No. Default is the professional <b>Studio</b> look — muted, readable, adult. Stickers and Looks are optional.</p></details>
+          <p>Nope. The app defaults to professional <b>Studio</b> — muted and readable. Stickers are optional accents; this landing just shows a few so you can feel the vibe.</p></details>
       </div>
     </section>
 
