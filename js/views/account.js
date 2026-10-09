@@ -9,7 +9,7 @@ import { renderSVG } from '../vendor/uqr.js';
 import { planLabel, isOwner, planTierKey, PRICE_MO, PRICE_YR, openProSheet, isProUnlocked, openBillingPortal } from '../plan.js';
 import { STRIPE_TEST_MODE } from '../config.js';
 
-const BUILD_TAG = '0.6.5';
+const BUILD_TAG = '0.6.6';
 
 const statusLabel = {
   [SyncStatus.Off]: 'Cloud off',
@@ -176,9 +176,16 @@ export function panelAccount(ctx) {
       if (tier === 'founding') return `<div class="plan-row"><div><span class="plan-badge founding">Founding mom</span>
         <span class="muted small">Pro · thanks for believing early.${STRIPE_TEST_MODE ? ' · Test mode' : ''}</span></div>
         <button class="btn small ghost" data-a="acct-portal">Manage</button></div>`;
-      if (tier === 'pro') return `<div class="plan-row"><div><span class="plan-badge pro">Pro</span>
-        <span class="muted small">${PRICE_MO} or ${PRICE_YR}${STRIPE_TEST_MODE ? ' · Test mode' : ''}</span></div>
+      if (tier === 'pro') {
+        const st = ctx.store?.settings?.subscriptionStatus || '';
+        const trialEnd = ctx.store?.settings?.trialEndsAt;
+        const trialLine = (st === 'trialing' && trialEnd)
+          ? `Trial ends ${new Date(trialEnd).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+          : `${PRICE_MO} or ${PRICE_YR}`;
+        return `<div class="plan-row"><div><span class="plan-badge pro">${st === 'trialing' ? 'Pro · trial' : 'Pro'}</span>
+        <span class="muted small">${trialLine}${STRIPE_TEST_MODE ? ' · Test mode' : ''}</span></div>
         <button class="btn small ghost" data-a="acct-portal">Manage subscription</button></div>`;
+      }
       return `<div class="plan-row free-plan"><div><span class="plan-badge">Free</span>
         <p class="muted small">Core planner, lists, End of Day, Studio Look, teaser stickers. Pro adds Looks, full packs, Weekend Reset &amp; Sunday plan — ${PRICE_MO} or ${PRICE_YR}.</p></div>
         <button class="btn small primary" data-a="acct-pro">See Pro</button></div>`;

@@ -1750,3 +1750,14 @@ body.landing-mode {
   .lp-install-panel { grid-template-columns: 1fr; }
   .lp-install-visual { display: flex; justify-content: center; }
 }
+
+/* Trial / launch pricing */
+.lp-price-note { margin: .25rem 0 .75rem; font-size: .88rem; color: var(--ink-soft); }
+.lp-launch-tag {
+  display: inline-block; margin-left: .35rem; padding: .15rem .5rem;
+  font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  vertical-align: middle; border-radius: 999px; background: var(--lp-blush); color: #2c2a28;
+}
+.pro-price { display: flex; flex-direction: column; gap: .25rem; }
+.pro-price .pro-best { font-size: .95rem; }
+.pro-actions .btn.primary { order: -1; }

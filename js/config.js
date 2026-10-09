@@ -12,3 +12,10 @@ export const STRIPE_TEST_MODE = false;
 export const STRIPE_PRICE_MONTHLY = 'price_1UOiFzJlf5VyzN6wxNYUOvxE';
 export const STRIPE_PRICE_YEARLY = 'price_1UOiFzJlf5VyzN6w5c7G1qJd';
 export const STRIPE_PRICE_FOUNDING = 'price_1UOiG0Jlf5VyzN6w8PYohmdy';
+
+/** Launch-week Founding Mom $1 offer ends (America/Chicago Oct 16, 2026 23:59 → UTC). */
+export const FOUNDING_OFFER_ENDS_ISO = '2026-10-17T04:59:59.000Z';
+export function isFoundingOfferLive(now = Date.now()) {
+  return now < Date.parse(FOUNDING_OFFER_ENDS_ISO);
+}
+

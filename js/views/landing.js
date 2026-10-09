@@ -7,6 +7,7 @@ import { stickerHTML } from '../style/stickers.js';
 import { icon } from '../ui.js';
 import { isSupabaseConfigured, SITE_URL } from '../config.js';
 import { PRICE_MO, PRICE_YR, PRICE_FOUNDING, openProSheet } from '../plan.js';
+import { isFoundingOfferLive } from '../config.js';
 import {
   sendSignInCode, verifySignInCode, redeemPairingCode, getSession,
 } from '../sync/client.js';
@@ -219,6 +220,7 @@ function installGuideHTML(active = 'ios') {
 export function renderLanding(view, ctx) {
   document.body.classList.add('landing-mode');
   const configured = isSupabaseConfigured();
+  const foundingLive = isFoundingOfferLive();
 
   view.innerHTML = `
   <div class="lp lp-fun">
@@ -326,7 +328,7 @@ export function renderLanding(view, ctx) {
     <section class="lp-section" id="pricing">
       <div class="lp-section-head">
         <h2>Pricing that doesn’t guilt you</h2>
-        <p class="muted">Start free. Upgrade when the extras earn their keep.</p>
+        <p class="muted">Start free. Try Pro for 7 days — we’ll remind you before you’re charged.</p>
       </div>
       <div class="lp-price-grid">
         <div class="lp-price-card">
@@ -342,22 +344,23 @@ export function renderLanding(view, ctx) {
         </div>
         <div class="lp-price-card featured">
           <p class="lp-price-label">Pro</p>
-          <p class="lp-price-amt">${esc(PRICE_MO)} <span>or ${esc(PRICE_YR)}</span></p>
+          <p class="lp-price-amt">$3<span>/mo</span></p>
+          <p class="lp-price-note">Best value: billed ${esc(PRICE_YR)} · or ${esc(PRICE_MO)}</p>
           <ul>
             <li>Every Look in Style Studio</li>
             <li>Full sticker packs</li>
             <li>Weekend Reset + Sunday plan</li>
             <li>Seasonal pack drops</li>
           </ul>
-          <button type="button" class="btn primary" data-lp="pro">See Pro unlock</button>
-          <p class="muted small">Cancel anytime from Account → Manage subscription.</p>
+          <button type="button" class="btn primary" data-lp="pro">Start 7-day free trial</button>
+          <p class="muted small">Free for 7 days, then $36/yr or $4.99/mo. Cancel anytime in Account. We’ll remind you before you’re charged. One trial per person.</p>
         </div>
-        <div class="lp-price-card founding">
-          <p class="lp-price-label">Founding Mom</p>
+        ${foundingLive ? `<div class="lp-price-card founding">
+          <p class="lp-price-label">Founding Mom <span class="lp-launch-tag">Launch week only</span></p>
           <p class="lp-price-amt">${esc(PRICE_FOUNDING)}</p>
-          <p>One-time early thanks — Pro for 12 months + a Founding badge.</p>
+          <p>One-time — Pro for 12 months + a Founding badge. Ends Oct 16.</p>
           <button type="button" class="btn" data-lp="pro">Join founding moms</button>
-        </div>
+        </div>` : ''}
       </div>
     </section>
 

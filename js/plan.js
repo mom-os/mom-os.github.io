@@ -1,5 +1,5 @@
 /** Plan / owner entitlements + Stripe Checkout (TEST mode first). */
-import { OWNER_EMAILS, STRIPE_TEST_MODE, SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+import { OWNER_EMAILS, SUPABASE_URL, SUPABASE_ANON_KEY, isFoundingOfferLive } from './config.js';
 import { openPopover, closePopover } from './ui.js';
 import { esc } from './util.js';
 import { getSession, getSupabase } from './sync/client.js';
@@ -22,6 +22,7 @@ export function isOwner(ctx) {
 export function isProUnlocked(ctx) {
   if (isOwner(ctx)) return true;
   const s = ctx?.store?.settings || {};
+  if ((s.subscriptionStatus || '') === 'trialing') return true;
   if ((s.plan || 'free') !== 'pro') return false;
   // Founding Mom: honor expires_at when present
   if (s.foundingMom && s.foundingExpiresAt) {
@@ -38,6 +39,7 @@ export function planLabel(ctx) {
   if (isOwner(ctx)) return 'Founder · free forever';
   const s = ctx?.store?.settings || {};
   if (s.foundingMom && (s.plan || 'free') === 'pro') return 'Founding mom · Pro';
+  if ((s.subscriptionStatus || '') === 'trialing') return 'Pro · free trial';
   if ((s.plan || 'free') === 'pro') return 'Pro';
   return 'Free';
 }
@@ -76,6 +78,8 @@ export function ensurePlanSettings(settings) {
   if (!settings.plan) settings.plan = 'free';
   if (settings.foundingMom == null) settings.foundingMom = false;
   if (settings.foundingExpiresAt === undefined) settings.foundingExpiresAt = null;
+  if (settings.trialEndsAt === undefined) settings.trialEndsAt = null;
+  if (settings.subscriptionStatus === undefined) settings.subscriptionStatus = 'none';
   if (!settings.retention || typeof settings.retention !== 'object') {
     settings.retention = {
       streakCount: 0,
@@ -170,6 +174,7 @@ export function applySubscriptionRow(settings, row) {
     settings.stripeCustomerId = null;
     settings.stripeSubscriptionId = null;
     settings.subscriptionStatus = 'none';
+    settings.trialEndsAt = null;
     return settings;
   }
   let plan = row.plan || 'free';
@@ -185,31 +190,38 @@ export function applySubscriptionRow(settings, row) {
   settings.stripeSubscriptionId = row.stripe_subscription_id || null;
   settings.subscriptionStatus = row.status || 'none';
   settings.currentPeriodEnd = row.current_period_end || null;
+  settings.trialEndsAt = row.trial_ends_at || null;
+  // Trialling counts as Pro (server plan should already be pro)
+  if (row.status === 'trialing') settings.plan = 'pro';
   return settings;
 }
 
 export function openProSheet(anchor, ctx, { reason = 'Mom.OS Pro', onClose } = {}) {
-  const testNote = STRIPE_TEST_MODE
-    ? '<p class="pro-test-badge">Test mode — use card 4242 4242 4242 4242. No real charge.</p>'
+  const foundingLive = isFoundingOfferLive();
+  const foundingBtn = foundingLive
+    ? `<button class="btn ghost" data-pro="founding">Launch week · Founding Mom $1</button>`
     : '';
+  const foundingFoot = foundingLive
+    ? `<p class="pro-foot muted small">Launch week only (ends Oct 16): Founding Mom is $1 once — Pro for 12 months + a Founding badge. One free trial per person on monthly/yearly.</p>`
+    : `<p class="pro-foot muted small">One free trial per person. Cancel anytime in Account → Manage subscription.</p>`;
   const html = `
     <div class="pro-sheet">
       <p class="pro-kicker">Mom.OS Pro</p>
       <h3 class="pro-title">${esc(reason)}</h3>
       <p class="pro-lead">Calm extras for the moms who want the full studio — still ADHD-friendly, never shouty.</p>
-      ${testNote}
       <ul class="pro-benefits">${PRO_BENEFITS.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>
       <div class="pro-price">
-        <span><b>${PRICE_MO}</b> or <b>${PRICE_YR}</b></span>
-        <small>Cancel anytime${STRIPE_TEST_MODE ? ' · Stripe test mode' : ''}</small>
+        <span class="pro-best"><b>Best value:</b> $3/mo, billed $36/yr</span>
+        <span class="muted small">or $4.99/mo</span>
+        <small>Free for 7 days, then your plan price. Cancel anytime in Account. We’ll remind you before you’re charged.</small>
       </div>
       <div class="pro-actions">
-        <button class="btn primary" data-pro="monthly">Unlock Pro · ${PRICE_MO}</button>
-        <button class="btn" data-pro="yearly">Unlock Pro · ${PRICE_YR}</button>
-        <button class="btn ghost" data-pro="founding">Founding Mom · ${PRICE_FOUNDING}</button>
+        <button class="btn primary" data-pro="yearly">Start 7-day free trial · yearly</button>
+        <button class="btn" data-pro="monthly">Start 7-day free trial · monthly</button>
+        ${foundingBtn}
         <button class="btn ghost" data-pro="close">Not now</button>
       </div>
-      <p class="pro-foot muted small">Founding Mom is $1 once — Pro for 12 months + a Founding badge. Owner accounts stay free forever.</p>
+      ${foundingFoot}
     </div>`;
   const el = openPopover(anchor, html, { className: 'pro-pop', width: 340, onClose });
   el.addEventListener('click', (e) => {

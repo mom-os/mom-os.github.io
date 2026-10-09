@@ -1,6 +1,29 @@
 import Stripe from 'https://esm.sh/stripe@17.5.0?target=deno';
 import { cors, json, requireUser, isOwnerEmail, priceIds, stripeSecret, SITE, adminClient } from '../_shared/billing.ts';
 
+const TRIAL_DAYS = 7;
+
+async function alreadyHadTrialOrSub(
+  stripe: Stripe,
+  customerId: string | undefined,
+  subRow: Record<string, unknown> | null,
+): Promise<boolean> {
+  if (subRow?.trial_used === true) return true;
+  if (subRow?.founding_mom === true) return true;
+  const status = String(subRow?.status || '');
+  if (['trialing', 'active', 'past_due', 'canceled', 'unpaid', 'founding_active'].includes(status)) {
+    if (subRow?.stripe_subscription_id || status === 'founding_active') return true;
+  }
+  if (!customerId) return false;
+  const subs = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 30 });
+  for (const s of subs.data) {
+    if (s.trial_start || s.trial_end) return true;
+    if (s.status === 'incomplete' || s.status === 'incomplete_expired') continue;
+    return true;
+  }
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(req) });
   if (req.method !== 'POST') return json(req, { error: 'POST only' }, 405);
@@ -31,8 +54,7 @@ Deno.serve(async (req) => {
   const stripe = new Stripe(secret, { apiVersion: '2024-11-20.acacia', httpClient: Stripe.createFetchHttpClient() });
   const admin = adminClient();
 
-  // Reuse Stripe customer if we already have one
-  const { data: subRow } = await admin.from('subscriptions').select('stripe_customer_id').eq('user_id', user.id).maybeSingle();
+  const { data: subRow } = await admin.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle();
   let customerId = subRow?.stripe_customer_id || undefined;
   if (!customerId && user.email) {
     const existing = await stripe.customers.list({ email: user.email, limit: 1 });
@@ -55,10 +77,21 @@ Deno.serve(async (req) => {
   if (customerId) sessionParams.customer = customerId;
   else if (user.email) sessionParams.customer_email = user.email;
 
+  let trialOffered = false;
   if (pick.mode === 'subscription') {
+    const skipTrial = await alreadyHadTrialOrSub(stripe, customerId, subRow);
+    sessionParams.payment_method_collection = 'always';
     sessionParams.subscription_data = {
-      metadata: { supabase_user_id: user.id, lookup_key: pick.lookup },
+      metadata: {
+        supabase_user_id: user.id,
+        lookup_key: pick.lookup,
+        trial_offered: skipTrial ? '0' : '1',
+      },
     };
+    if (!skipTrial) {
+      sessionParams.subscription_data.trial_period_days = TRIAL_DAYS;
+      trialOffered = true;
+    }
   } else {
     sessionParams.payment_intent_data = {
       metadata: { supabase_user_id: user.id, lookup_key: pick.lookup, kind: 'founding' },
@@ -67,7 +100,12 @@ Deno.serve(async (req) => {
 
   try {
     const session = await stripe.checkout.sessions.create(sessionParams);
-    return json(req, { url: session.url, id: session.id, mode: Deno.env.get('STRIPE_MODE') || 'test' });
+    return json(req, {
+      url: session.url,
+      id: session.id,
+      mode: Deno.env.get('STRIPE_MODE') || 'test',
+      trial: trialOffered,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Checkout failed';
     return json(req, { error: msg }, 500);
