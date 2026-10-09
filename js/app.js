@@ -9,14 +9,18 @@ import { renderMyDay } from './views/myday.js';
 import { renderStudio } from './views/studio.js';
 import { renderLists } from './views/lists.js';
 import { renderEndOfDay } from './views/endofday.js';
+import { renderLanding, hasEnteredApp, markEnteredApp, isLandingHash } from './views/landing.js';
 import { SyncEngine, SyncStatus } from './sync/engine.js';
 import { syncChipHTML } from './views/account.js';
 import { isSupabaseConfigured } from './config.js';
-import { recoverAuthFromUrl, urlHasAuthCallback } from './sync/client.js';
+import { recoverAuthFromUrl, urlHasAuthCallback, getSession } from './sync/client.js';
 import { startAlarmClock } from './alarms.js';
 
 const store = new Store();
-if (!store.state.meta.seeded) seedSample(store);
+// Delay sample seed until the visitor enters the planner (landing first for new users)
+function ensureSeeded() {
+  if (!store.state.meta.seeded) seedSample(store);
+}
 
 let view = document.getElementById('view');
 const ctx = {
@@ -35,6 +39,7 @@ const ctx = {
     ctx.withUndo('Sample data cleared', () => clearSample(store));
   },
   loadSample() { seedSample(store); toast('Sample days added (Oct 8 & Oct 10, 2026)'); },
+  ensureSeeded,
 };
 
 
@@ -54,6 +59,8 @@ async function handleCheckoutReturn() {
     return;
   }
   if (flag === 'success') {
+    markEnteredApp();
+    ensureSeeded();
     toast('Welcome to Pro — unlocking…');
     try { await ctx.sync?.pullRemote?.(); } catch {}
     // brief poll in case webhook lags
@@ -85,14 +92,35 @@ function renderSyncChip() {
 
 
 function parseRoute() {
-  const raw = location.hash || '#/myday';
+  const raw = location.hash || '';
   // Auth redirects use #access_token=... — not an app route
   if (raw.includes('access_token') || raw.includes('error_description') || raw.includes('refresh_token=')) {
     return { name: 'myday', arg: todayKey() };
   }
+  if (isLandingHash(raw)) return { name: 'landing', arg: '' };
   const parts = raw.replace(/^#\/?/, '').split('/');
-  const name = ['month', 'day', 'myday', 'lists', 'eod', 'style'].includes(parts[0]) ? parts[0] : 'myday';
+  const name = ['month', 'day', 'myday', 'lists', 'eod', 'style', 'home', 'welcome', 'landing'].includes(parts[0])
+    ? (['home', 'welcome', 'landing'].includes(parts[0]) ? 'landing' : parts[0])
+    : 'myday';
   return { name, arg: parts[1] };
+}
+
+/** New visitors at / see landing; signed-in or returning planners skip to the app. */
+function shouldShowLanding(route) {
+  if (route.name !== 'landing') return false;
+  if (ctx.sync?.user) return false;
+  if (hasEnteredApp()) return false;
+  return true;
+}
+
+function redirectReturningVisitor() {
+  if (!isLandingHash(location.hash || '')) return;
+  if (ctx.sync?.user || hasEnteredApp()) {
+    ensureSeeded();
+    if (!location.hash || isLandingHash(location.hash)) {
+      history.replaceState({}, '', `${location.pathname}${location.search}#/myday`);
+    }
+  }
 }
 
 export function applyTheme() { applyStyle(store.settings); }
@@ -125,7 +153,27 @@ document.getElementById('sample-banner').addEventListener('click', (e) => {
 let lastRouteKey = '';
 function render() {
   closePopover();
-  const route = parseRoute();
+  redirectReturningVisitor();
+  let route = parseRoute();
+
+  // Landing vs app chrome
+  if (shouldShowLanding(route)) {
+    document.body.classList.add('landing-mode');
+    applyTheme();
+    const routeKey = 'landing/';
+    const fresh = view.cloneNode(false); view.replaceWith(fresh); view = fresh;
+    view.dataset.view = 'landing';
+    document.body.dataset.view = 'landing';
+    renderLanding(view, ctx);
+    if (routeKey !== lastRouteKey) window.scrollTo(0, 0);
+    lastRouteKey = routeKey;
+    return;
+  }
+
+  document.body.classList.remove('landing-mode');
+  ensureSeeded();
+  if (route.name === 'landing') route = { name: 'myday', arg: todayKey() };
+
   if (route.name === 'day' || route.name === 'myday' || route.name === 'lists' || route.name === 'eod') ctx.focusDate = /^\d{4}-\d{2}-\d{2}$/.test(route.arg || '') ? route.arg : ctx.focusDate;
   if (route.name === 'month' && /^\d{4}-\d{2}$/.test(route.arg || '') && !ctx.focusDate.startsWith(route.arg)) ctx.focusDate = `${route.arg}-01`;
   applyTheme(); updateTabs(route); renderBanner(); renderSyncChip();
@@ -178,15 +226,29 @@ async function boot() {
   } catch (e) {
     console.warn('sync start', e);
   }
+  if (ctx.sync?.user) markEnteredApp();
+  // First visit with no hash → landing (#/). Returning / signed-in → #/myday via redirectReturningVisitor.
+  if (!location.hash || location.hash === '#') {
+    if (ctx.sync?.user || hasEnteredApp()) {
+      history.replaceState({}, '', `${location.pathname}${location.search}#/myday`);
+    } else {
+      history.replaceState({}, '', `${location.pathname}${location.search}#/`);
+    }
+  }
+  if (ctx.sync?.user || hasEnteredApp()) ensureSeeded();
   render();
   renderSyncChip();
   startAlarmClock(store, { toast });
   try { await handleCheckoutReturn(); } catch (e) { console.warn('checkout return', e); }
   if (recovered.fromUrl && recovered.session) {
+    markEnteredApp();
+    ensureSeeded();
     ctx.toast('Signed in — syncing…');
-    if (!location.hash.startsWith('#/')) ctx.go('#/myday');
+    if (!location.hash.startsWith('#/') || isLandingHash(location.hash)) ctx.go('#/myday');
   } else if (hadCallback && !recovered.session) {
-    ctx.go('#/style/account');
+    // Land on landing auth or account
+    if (hasEnteredApp()) ctx.go('#/style/account');
+    else { ctx.landingAuthMode = 'email'; ctx.go('#/'); }
     ctx.toast(recovered.errorMessage || 'Sign-in link didn’t stick — try the 6-digit code, or ask for a new link.');
   }
 }
