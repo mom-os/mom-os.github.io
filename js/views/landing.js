@@ -350,7 +350,7 @@ export function renderLanding(view, ctx) {
             <li>Seasonal pack drops</li>
           </ul>
           <button type="button" class="btn primary" data-lp="pro">See Pro unlock</button>
-          <p class="muted small">Cancel anytime. Test card flow available while we stabilize billing.</p>
+          <p class="muted small">Cancel anytime from Account → Manage subscription.</p>
         </div>
         <div class="lp-price-card founding">
           <p class="lp-price-label">Founding Mom</p>
