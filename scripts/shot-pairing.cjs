@@ -2,7 +2,7 @@
 const { chromium } = require('playwright-core');
 const path = require('path');
 const fs = require('fs');
-const BASE = (process.argv[2] || 'https://jblanchard87.github.io/momos/').replace(/\/?$/, '/');
+const BASE = (process.argv[2] || 'https://mom-os.github.io/').replace(/\/?$/, '/');
 const OUT = path.join(__dirname, '..', 'screenshots');
 
 function loadEnv() {

@@ -136,14 +136,14 @@ cat > "$ROOT/js/config.js" <<EOCFG
 // Public Supabase client config (anon key is safe to ship; never put the service role here).
 export const SUPABASE_URL = '$URL';
 export const SUPABASE_ANON_KEY = '$ANON';
-export const SITE_URL = 'https://jblanchard87.github.io/momos';
+export const SITE_URL = 'https://mom-os.github.io';
 export const isSupabaseConfigured = () => !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 EOCFG
 
 echo "Configuring auth URLs + OTP length…"
 api_json -X PATCH "$API/projects/$PROJECT_REF/config/auth" -d '{
-  "site_url": "https://jblanchard87.github.io/momos/",
-  "uri_allow_list": "https://jblanchard87.github.io/momos/**,http://127.0.0.1:8765/**,http://localhost:8765/**,http://127.0.0.1:8767/**,http://localhost:8767/**",
+  "site_url": "https://mom-os.github.io/",
+  "uri_allow_list": "https://mom-os.github.io/**,http://127.0.0.1:8765/**,http://localhost:8765/**,http://127.0.0.1:8767/**,http://localhost:8767/**",
   "external_email_enabled": true,
   "mailer_autoconfirm": false,
   "mailer_otp_length": 6

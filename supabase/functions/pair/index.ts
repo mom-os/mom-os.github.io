@@ -7,7 +7,7 @@ const TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 const IP_WINDOW_MS = 15 * 60 * 1000;
 const IP_MAX = 30;
-const SITE = 'https://jblanchard87.github.io/momos/';
+const SITE = 'https://mom-os.github.io/';
 
 function cors(req: Request) {
   const origin = req.headers.get('Origin') || '*';

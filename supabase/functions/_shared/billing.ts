@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 
-export const SITE = 'https://jblanchard87.github.io/momos';
+export const SITE = 'https://mom-os.github.io';
 export const OWNER_EMAILS = ['helllo.jordan@gmail.com'];
 
 export function cors(req: Request) {

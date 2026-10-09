@@ -1,7 +1,7 @@
 // NODE_PATH=/workspace/planner-tools/node_modules node scripts/shot-account-otp.cjs [baseUrl]
 const { chromium } = require('playwright-core');
 const path = require('path');
-const BASE = process.argv[2] || 'https://jblanchard87.github.io/momos/';
+const BASE = process.argv[2] || 'https://mom-os.github.io/';
 const OUT = path.join(__dirname, '..', 'screenshots');
 
 (async () => {

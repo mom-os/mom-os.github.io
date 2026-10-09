@@ -288,7 +288,7 @@ export function renderLanding(view, ctx) {
       <p class="muted small">Made for moms who run a household and a life. © ${new Date().getFullYear()} Mom.OS</p>
       <p class="lp-foot-links">
         <button type="button" class="linkish" data-lp="enter">Open my planner</button>
-        · <a href="${esc(SITE_URL)}">jblanchard87.github.io/momos</a>
+        · <a href="${esc(SITE_URL)}">mom-os.github.io</a>
       </p>
     </footer>
   </div>`;
