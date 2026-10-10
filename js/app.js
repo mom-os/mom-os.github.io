@@ -14,6 +14,8 @@ import { SyncEngine, SyncStatus } from './sync/engine.js';
 import { syncChipHTML } from './views/account.js';
 import { isSupabaseConfigured } from './config.js';
 import { recoverAuthFromUrl, urlHasAuthCallback, getSession } from './sync/client.js';
+import { trackPageViewOnce, trackHashPageView, captureUtmFromLocation } from './analytics.js';
+import { refreshSaveNudge } from './save-nudge.js';
 import { startAlarmClock } from './alarms.js';
 
 const store = new Store();
@@ -204,12 +206,14 @@ function render() {
 }
 
 // style edits marked silent still need the CSS re-applied (live preview without a full re-render)
-store.subscribe(() => render());
+store.subscribe(() => { render(); try { refreshSaveNudge(ctx); } catch {} });
 ctx.applyStyleOnly = () => applyTheme();
 window.addEventListener('hashchange', () => {
   // Ignore the transient hash="" clear from supabase after reading tokens
   if (urlHasAuthCallback()) return;
+  try { trackHashPageView(); } catch {}
   render();
+  try { refreshSaveNudge(ctx); } catch {}
 });
 
 async function boot() {
@@ -240,6 +244,7 @@ async function boot() {
   renderSyncChip();
   startAlarmClock(store, { toast });
   try { await handleCheckoutReturn(); } catch (e) { console.warn('checkout return', e); }
+  try { captureUtmFromLocation(); trackPageViewOnce(); refreshSaveNudge(ctx); } catch (e) { console.warn('analytics', e); }
   if (recovered.fromUrl && recovered.session) {
     markEnteredApp();
     ensureSeeded();

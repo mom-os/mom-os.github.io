@@ -3,6 +3,7 @@ import { OWNER_EMAILS, SUPABASE_URL, SUPABASE_ANON_KEY, isFoundingOfferLive } fr
 import { openPopover, closePopover } from './ui.js';
 import { esc } from './util.js';
 import { getSession, getSupabase } from './sync/client.js';
+import { track } from './analytics.js';
 
 export const PRICE_MO = '$4.99/mo';
 export const PRICE_YR = '$36/yr';
@@ -119,6 +120,7 @@ export async function startCheckout(ctx, priceKind) {
     return;
   }
   ctx?.toast?.('Opening secure checkout…');
+  try { track('checkout_start', { path: location.hash || '#/', price: priceKind }); } catch {}
   const res = await fetch(`${SUPABASE_URL}/functions/v1/checkout`, {
     method: 'POST',
     headers: {
@@ -197,6 +199,7 @@ export function applySubscriptionRow(settings, row) {
 }
 
 export function openProSheet(anchor, ctx, { reason = 'Mom.OS Pro', onClose } = {}) {
+  try { track('pro_sheet_open', { path: location.hash || '#/' }); } catch {}
   const foundingLive = isFoundingOfferLive();
   const foundingBtn = foundingLive
     ? `<button class="btn ghost" data-pro="founding">Launch week · Founding Mom $1</button>`

@@ -8,6 +8,7 @@ import { icon } from '../ui.js';
 import { isSupabaseConfigured, SITE_URL } from '../config.js';
 import { PRICE_MO, PRICE_YR, PRICE_FOUNDING, openProSheet } from '../plan.js';
 import { isFoundingOfferLive } from '../config.js';
+import { track } from '../analytics.js';
 import {
   sendSignInCode, verifySignInCode, redeemPairingCode, getSession,
 } from '../sync/client.js';
@@ -420,6 +421,7 @@ function bindLanding(view, ctx) {
     const scrollEl = e.target.closest('[data-lp-scroll]');
     if (scrollEl) {
       const id = scrollEl.dataset.lpScroll;
+      if (id === 'install') { try { track('install_click', { path: '#/install' }); } catch {} }
       view.querySelector('#' + id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
@@ -441,8 +443,11 @@ function bindLanding(view, ctx) {
     const el = e.target.closest('[data-lp]');
     if (!el) return;
     const act = el.dataset.lp;
+    if (act === 'start') { try { track('start_free_click', { path: '#/' }); } catch {} }
+    if (act === 'pro') { try { track('pro_sheet_open', { path: '#/pricing' }); } catch {} }
 
     if (act === 'pwa-install') {
+      try { track('install_click', { path: '#/install', via: 'beforeinstallprompt' }); } catch {}
       const deferred = ctx._pwaDeferred;
       if (!deferred) { ctx.toast('Use the steps below for your device'); return; }
       deferred.prompt();
@@ -515,6 +520,7 @@ function bindLanding(view, ctx) {
       try {
         ctx.landingDraftEmail = email;
         await sendSignInCode(email);
+        try { track('signin_code_sent', { path: '#/' }); } catch {}
         ctx.landingPendingEmail = email;
         ctx.landingAuthMode = 'code';
         ctx.accountEmailRateLimited = false;
@@ -537,6 +543,7 @@ function bindLanding(view, ctx) {
       el.disabled = true;
       try {
         await verifySignInCode(email, code);
+        try { track('signup_complete', { path: '#/' }); } catch {}
         markEnteredApp();
         if (typeof ctx.ensureSeeded === 'function') ctx.ensureSeeded();
         ctx.toast('Signed in — opening your planner');
