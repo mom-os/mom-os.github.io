@@ -73,10 +73,54 @@ function realMomDayHTML() {
 }
 
 function featCard(img, title, body) {
+  // Prefer .webp when callers pass a .png path under assets/landing/
+  let media = '';
+  if (img) {
+    const webp = img.endsWith('.png') ? img.slice(0, -4) + '.webp' : '';
+    media = webp
+      ? `<picture><source srcset="${esc(webp)}" type="image/webp"><img src="${esc(img)}" alt="" loading="lazy" decoding="async" width="900" height="560"></picture>`
+      : `<img src="${esc(img)}" alt="" loading="lazy" decoding="async">`;
+  }
   return `<article class="lp-feat">
-    <div class="lp-feat-media">${img ? `<img src="${esc(img)}" alt="" loading="lazy" decoding="async">` : ''}</div>
+    <div class="lp-feat-media">${media}</div>
     <div class="lp-feat-copy"><h3>${esc(title)}</h3><p>${esc(body)}</p></div>
   </article>`;
+}
+
+function heroDemoHTML() {
+  // ~24s CSS crossfade of real phone screens (+ animated WebP fallback for mobile)
+  const frames = [
+    ['assets/landing/demo/demo-01-myday.webp', 'My Day'],
+    ['assets/landing/demo/demo-02-day.webp', 'Day page'],
+    ['assets/landing/demo/demo-03-top3.webp', 'Top 3'],
+    ['assets/landing/demo/demo-04-weekend.webp', 'Weekend Reset'],
+    ['assets/landing/demo/demo-05-scroll.webp', 'Timeline'],
+    ['assets/landing/demo/demo-06-eod.webp', 'End of Day'],
+  ];
+  const slides = frames.map(([src, label], i) => {
+    const load = i === 0 ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
+    return `<img class="lp-demo-slide s${i}" src="${esc(src)}" alt="" width="360" height="640" decoding="async" ${load} data-label="${esc(label)}">`;
+  }).join('');
+  return `<div class="lp-demo" aria-hidden="true">
+    <div class="lp-demo-phone">
+      <div class="lp-demo-notch"></div>
+      <div class="lp-demo-screen">
+        ${slides}
+        <img class="lp-demo-anim" src="assets/landing/demo-loop.webp" alt="" width="360" height="640" decoding="async" loading="lazy">
+      </div>
+    </div>
+    <p class="lp-demo-caption">A real mom day — filled in, not fantasized</p>
+  </div>`;
+}
+
+function stickyFoundingHTML(live) {
+  if (!live) return '';
+  return `<div class="lp-sticky-cta" id="lp-sticky-founding" hidden>
+    <button type="button" class="lp-sticky-btn" data-lp="pro">
+      <span class="lp-sticky-main">Founding Moms $1 · ends Fri Oct 16</span>
+      <span class="lp-sticky-count" data-lp-countdown aria-live="polite"></span>
+    </button>
+  </div>`;
 }
 
 function authPanelHTML(ctx) {
@@ -252,19 +296,26 @@ export function renderLanding(view, ctx) {
         <h1>For the mom running the house, the business, and <span class="lp-mark">47 browser tabs</span> in her brain.</h1>
         <p class="lp-lead">Mom.OS is your desk planner that actually fits a real day — meals, drop-offs, client calls, and the tiny wins — on phone and PC, without the guilt apps.</p>
         <div class="lp-hero-cta">
-          <button type="button" class="btn primary large" data-lp="start">Start free</button>
-          <button type="button" class="btn large" data-lp="signin">Sign in</button>
-          <button type="button" class="btn ghost large" data-lp="enter">Open my planner</button>
+          <button type="button" class="btn primary large" data-lp="try">Try it now (no sign-up)</button>
+          <button type="button" class="btn large" data-lp="start">Start free</button>
+          <button type="button" class="btn ghost large" data-lp="signin">Sign in</button>
         </div>
-        <p class="lp-micro muted">Core day stays free. Pro adds Looks, full sticker packs, Weekend Reset &amp; Sunday plan.
+        <p class="lp-micro muted">Opens a sample day instantly — no email. Core stays free.
           <button type="button" class="linkish" data-lp-scroll="install">How to get the app →</button></p>
       </div>
       <div class="lp-hero-visual" aria-hidden="true">
-        <div class="lp-device desk">
-          <img src="assets/landing/feat-day.png" alt="" loading="eager" decoding="async">
+        ${heroDemoHTML()}
+        <div class="lp-device desk lp-hero-static">
+          <picture>
+            <source srcset="assets/landing/feat-day.webp" type="image/webp">
+            <img src="assets/landing/feat-day.png" alt="" loading="eager" decoding="async" width="900" height="560">
+          </picture>
         </div>
-        <div class="lp-device phone">
-          <img src="assets/landing/feat-phone.png" alt="" loading="eager" decoding="async">
+        <div class="lp-device phone lp-hero-static">
+          <picture>
+            <source srcset="assets/landing/feat-phone.webp" type="image/webp">
+            <img src="assets/landing/feat-phone.png" alt="" loading="lazy" decoding="async" width="540" height="960">
+          </picture>
         </div>
         ${decoSticker('star', 's5')}
       </div>
@@ -394,6 +445,7 @@ export function renderLanding(view, ctx) {
         · <a href="${esc(SITE_URL)}">mom-os.github.io</a>
       </p>
     </footer>
+    ${stickyFoundingHTML(foundingLive)}
   </div>`;
 
   bindLanding(view, ctx);
@@ -443,9 +495,10 @@ function bindLanding(view, ctx) {
     const el = e.target.closest('[data-lp]');
     if (!el) return;
     const act = el.dataset.lp;
-    if (act === 'start') { try { track('start_free_click', { path: '#/' }); } catch {} }
+    if (act === 'start' || act === 'try') { try { track('start_free_click', { path: '#/', via: act }); } catch {} }
     if (act === 'pro') { try { track('pro_sheet_open', { path: '#/pricing' }); } catch {} }
 
+    if (act === 'try') return enterPlanner(ctx);
     if (act === 'pwa-install') {
       try { track('install_click', { path: '#/install', via: 'beforeinstallprompt' }); } catch {}
       const deferred = ctx._pwaDeferred;
@@ -612,4 +665,40 @@ function bindLanding(view, ctx) {
       view.querySelector('[data-lp="pair-redeem"]')?.click();
     }
   });
+
+  // Mobile sticky Founding Moms CTA + live countdown (hidden after Oct 16 23:59 CT)
+  bindStickyFounding(view, ctx);
+}
+
+function bindStickyFounding(view, ctx) {
+  const bar = view.querySelector('#lp-sticky-founding');
+  if (!bar) return;
+  const countEl = bar.querySelector('[data-lp-countdown]');
+  const ends = Date.parse('2026-10-17T04:59:59.000Z'); // Oct 16 23:59 CT
+  const tick = () => {
+    const left = ends - Date.now();
+    if (left <= 0) {
+      bar.hidden = true;
+      document.body.classList.remove('lp-has-sticky');
+      return false;
+    }
+    // show only on narrow viewports
+    const mobile = window.matchMedia('(max-width: 720px)').matches;
+    bar.hidden = !mobile;
+    document.body.classList.toggle('lp-has-sticky', mobile);
+    if (countEl) {
+      const s = Math.floor(left / 1000);
+      const d = Math.floor(s / 86400);
+      const h = Math.floor((s % 86400) / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      countEl.textContent = d > 0
+        ? `${d}d ${h}h ${m}m left`
+        : `${h}h ${String(m).padStart(2, '0')}m ${String(sec).padStart(2, '0')}s left`;
+    }
+    return true;
+  };
+  if (!tick()) return;
+  const id = setInterval(() => { if (!tick()) clearInterval(id); }, 1000);
+  window.addEventListener('resize', tick, { passive: true });
 }

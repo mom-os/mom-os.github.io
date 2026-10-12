@@ -45,13 +45,23 @@ export function getVisitorId() {
   }
 }
 
-/** Capture ?utm_source=… once per session/browser for later events. */
+const SOURCE_KEY = 'momos:traffic_source';
+
+/** Capture ?utm_source=… and fbclid (→ source=facebook) once per browser. */
 export function captureUtmFromLocation() {
   try {
     const u = new URL(location.href);
     const src = (u.searchParams.get('utm_source') || '').trim().slice(0, 80);
     if (src) localStorage.setItem(UTM_KEY, src);
+    // Meta ads / organic FB share click ids
+    if (u.searchParams.has('fbclid')) {
+      localStorage.setItem(SOURCE_KEY, 'facebook');
+    }
   } catch {}
+}
+
+export function storedTrafficSource() {
+  try { return (localStorage.getItem(SOURCE_KEY) || '').slice(0, 80); } catch { return ''; }
 }
 
 export function storedUtmSource() {
@@ -99,10 +109,14 @@ export async function track(name, props = {}) {
       referrer_host: (props.referrer_host != null ? String(props.referrer_host) : referrerHost()).slice(0, 200) || null,
       utm_source: (props.utm_source != null ? String(props.utm_source) : storedUtmSource()).slice(0, 80) || null,
       visitor_id: getVisitorId(),
-      props: typeof props === 'object' && props ? {
-        // strip reserved keys from props bag
-        ...Object.fromEntries(Object.entries(props).filter(([k]) => !['path', 'referrer_host', 'utm_source'].includes(k))),
-      } : {},
+      props: (() => {
+        const bag = typeof props === 'object' && props
+          ? Object.fromEntries(Object.entries(props).filter(([k]) => !['path', 'referrer_host', 'utm_source'].includes(k)))
+          : {};
+        const src = storedTrafficSource();
+        if (src && bag.source == null) bag.source = src;
+        return bag;
+      })(),
     };
     // fire-and-forget
     fetch(`${SUPABASE_URL}/rest/v1/analytics_events`, {

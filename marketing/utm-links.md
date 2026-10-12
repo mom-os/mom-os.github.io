@@ -13,3 +13,7 @@ Append these to the site URL so `scripts/stats.sh` can attribute visitors.
 Optional: add a hash route, e.g. `https://mom-os.github.io/?utm_source=fb_page#/pricing`
 
 Analytics respects Do Not Track and never stores emails or IP addresses.
+
+## Facebook click id
+Links that include `fbclid=…` (auto-added by Meta) set analytics `props.source=facebook`.
+You can still add `utm_source=fb_page` / `fb_group` / `personal` / `boudoir` — both are kept.
